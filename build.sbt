@@ -1,5 +1,7 @@
 name := "scala-zeromq"
 
+organization := "com.mdialog"
+
 version := "0.0.2-SNAPSHOT"
 
 scalaVersion := "2.10.1"
@@ -20,7 +22,7 @@ resolvers ++= Seq(
 
 publishTo <<= version { (v: String) =>
   if (v.trim.endsWith("-SNAPSHOT")) 
-    Some(Resolver.file("Snapshots", file("../chrisdinn.github.com/snapshots/")))
+    Some(Resolver.file("Snapshots", file("../mdialog.github.com/snapshots/")))
   else
-    Some(Resolver.file("Releases", file("../chrisdinn.github.com/releases/")))
+    Some(Resolver.file("Releases", file("../mdialog.github.com/releases/")))
 }
