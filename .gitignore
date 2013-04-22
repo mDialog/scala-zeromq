@@ -1,0 +1,12 @@
+.DS_Store
+target/
+project/boot/
+project/build/target/
+project/plugins/target/
+project/plugins/lib_managed/
+project/plugins/src_managed/
+*.log
+.cache
+.classpath
+.project
+.settings
