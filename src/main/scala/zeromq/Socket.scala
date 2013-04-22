@@ -30,9 +30,9 @@ object SocketType {
   object Pair extends SocketType(ZMQ.PAIR)
 }
 
-sealed trait SocketState
+private[zeromq] sealed trait SocketState
 
-object SocketState {
+private[zeromq] object SocketState {
   object Send extends SocketState
   object Receive extends SocketState
 }

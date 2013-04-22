@@ -5,10 +5,10 @@ import akka.actor.{ Actor, ActorRef, Terminated }
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 
-case class NewSocket(handler: ActorRef, socketType: SocketType, options: Seq[SocketParam])
-case object SocketCreated
-case object Closed
-case object Poll
+private[zeromq] case class NewSocket(handler: ActorRef, socketType: SocketType, options: Seq[SocketParam])
+private[zeromq] case object SocketCreated
+private[zeromq] case object Closed
+private[zeromq] case object Poll
 
 private[zeromq] class SocketManager extends Actor {
 
@@ -92,7 +92,6 @@ private[zeromq] class SocketManager extends Actor {
           case o: ConnectOption ⇒ handleConnectOption(socket, o)
           case o: PubSubOption  ⇒ handlePubSubOption(socket, o)
           case o: SocketOption  ⇒ socket.setSocketOption(o)
-          case _                ⇒
         }
       }
 

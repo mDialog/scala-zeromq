@@ -9,7 +9,7 @@ scala-zeromq uses one zeromq context per ActorSystem, with a single actor using
 a PinnedDispatcher polling all active sockets. Sockets are polled selectively to
 make efficient use of CPU time.
 
-Find scaladoc[here](http://mdialog.github.io/api/scala-zeromq-0.0.2/).
+Find scaladoc [here](http://mdialog.github.io/api/scala-zeromq-0.0.2/).
 
 To use it:
 
