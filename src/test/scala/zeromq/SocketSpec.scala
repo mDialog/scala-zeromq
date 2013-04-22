@@ -1,14 +1,12 @@
 
 package zeromq
 
-import language.postfixOps
-
 import org.scalatest.matchers.MustMatchers
 import org.scalatest.{ WordSpec, BeforeAndAfterAll }
 import akka.testkit.{ TestProbe, DefaultTimeout, TestKit }
-import scala.concurrent.duration._
 import akka.actor.{ Cancellable, Actor, Props, ActorSystem, ActorRef }
 import akka.util.{ ByteString, Timeout }
+import akka.util.duration._
 
 class SocketSpec extends TestKit(ActorSystem("SocketSpec")) with WordSpec with MustMatchers with BeforeAndAfterAll {
 

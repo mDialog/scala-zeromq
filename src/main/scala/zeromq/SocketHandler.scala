@@ -2,8 +2,8 @@ package zeromq
 
 import akka.actor._
 import akka.pattern.{ ask, pipe }
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.dispatch.Await
+import akka.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.util.{ ByteString, Timeout }
 
@@ -20,7 +20,7 @@ private[zeromq] class SocketHandler(manager: ActorRef, socketType: SocketType, s
     case _                 ⇒ None
   }
 
-  val params = socketParams.collect({ case a: SocketParam ⇒ a }).to[collection.immutable.Seq]
+  val params = socketParams.collect({ case a: SocketParam ⇒ a })
 
   Await.result(manager.ask(NewSocket(self, socketType, params)), timeout.duration)
 

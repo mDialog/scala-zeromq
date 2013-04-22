@@ -190,12 +190,12 @@ private[zeromq] class AlternatingSocket(socket: ZMQ.Socket, poller: ZMQ.Poller, 
     case Send ⇒ throw new UnsupportedOperationException()
     case Receive ⇒
       receiveMessage() match {
-        case option: Some[Message] ⇒
+        case Some(message: Message) ⇒
           poller.unregister(socket)
           pollIndex = -1
           state = Send
 
-          option.toIndexedSeq
+          IndexedSeq(message)
 
         case None ⇒ messages
       }

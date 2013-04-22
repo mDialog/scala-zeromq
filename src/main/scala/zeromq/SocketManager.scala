@@ -2,7 +2,8 @@ package zeromq
 
 import org.zeromq.ZMQ
 import akka.actor.{ Actor, ActorRef, Terminated }
-import scala.concurrent.duration._
+import akka.util.Duration
+import akka.util.duration._
 import java.util.concurrent.TimeUnit
 
 private[zeromq] case class NewSocket(handler: ActorRef, socketType: SocketType, options: Seq[SocketParam])

@@ -15,6 +15,6 @@ class ZeroMQExtension(system: ActorSystem) extends Extension {
 
   def newSocket(socketType: SocketType, socketParams: Param*): ActorRef = {
     socketCount += 1
-    system.actorOf(Props(classOf[SocketHandler], socketManager, socketType, socketParams), "socket-handler-" + socketCount)
+    system.actorOf(Props(new SocketHandler(socketManager, socketType, socketParams)), "socket-handler-" + socketCount)
   }
 }
