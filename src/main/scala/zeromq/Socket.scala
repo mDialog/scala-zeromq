@@ -1,6 +1,6 @@
 package zeromq
 
-import scala.annotation.tailrec
+import annotation.tailrec
 import org.zeromq.ZMQ
 import collection.mutable.ListBuffer
 import akka.util.ByteString

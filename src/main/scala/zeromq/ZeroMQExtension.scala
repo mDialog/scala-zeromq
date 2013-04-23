@@ -10,11 +10,13 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
 
 class ZeroMQExtension(system: ActorSystem) extends Extension {
 
-  val socketManager = system.actorOf(Props[SocketManager].withDispatcher("zeromq.context-dispatcher"), "zeromq")
   var socketCount = -1
+
+  val pollInterrupter = system.actorOf(Props[PollInterrupter].withDispatcher("zeromq.poll-interrupter-dispatcher"), "zeromq-poll-interrupter")
+  val socketManager = system.actorOf(Props[SocketManager].withDispatcher("zeromq.manager-dispatcher"), "zeromq-socket-manager")
 
   def newSocket(socketType: SocketType, socketParams: Param*): ActorRef = {
     socketCount += 1
-    system.actorOf(Props(classOf[SocketHandler], socketManager, socketType, socketParams), "socket-handler-" + socketCount)
+    system.actorOf(Props(classOf[SocketHandler], socketManager, pollInterrupter, socketType, socketParams), "socket-handler-" + socketCount)
   }
 }

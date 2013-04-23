@@ -7,12 +7,12 @@ import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 import akka.util.{ ByteString, Timeout }
 
-private[zeromq] class SocketHandler(manager: ActorRef, socketType: SocketType, socketParams: Seq[Param]) extends Actor {
+private[zeromq] class SocketHandler(manager: ActorRef, pollInterrupter: ActorRef, socketType: SocketType, socketParams: Seq[Param]) extends Actor {
   import context.dispatcher
 
   implicit val timeout = Timeout(Duration(context.system.settings.config.getMilliseconds("zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
 
-  var listener: Option[ActorRef] = socketParams.find {
+  private var listener: Option[ActorRef] = socketParams.find {
     case l: Listener ⇒ true
     case _           ⇒ false
   } match {
@@ -20,9 +20,11 @@ private[zeromq] class SocketHandler(manager: ActorRef, socketType: SocketType, s
     case _                 ⇒ None
   }
 
-  val params = socketParams.collect({ case a: SocketParam ⇒ a }).to[collection.immutable.Seq]
+  private val params = socketParams.collect({ case a: SocketParam ⇒ a }).to[collection.immutable.Seq]
 
-  Await.result(manager.ask(NewSocket(self, socketType, params)), timeout.duration)
+  private val registration = manager ? NewSocket(self, socketType, params)
+  pollInterrupter ! Interrupt
+  Await.result(registration, timeout.duration)
 
   def receive = {
     case Listener(l) ⇒
@@ -33,14 +35,20 @@ private[zeromq] class SocketHandler(manager: ActorRef, socketType: SocketType, s
     case Terminated(l) ⇒
       if (listener == Some(l)) listener = None
 
-    case param: SocketParam       ⇒ manager ! param
+    case param: SocketParam ⇒
+      manager ! param
+      pollInterrupter ! Interrupt
 
-    case query: SocketOptionQuery ⇒ manager ? query pipeTo sender
+    case query: SocketOptionQuery ⇒
+      manager ? query pipeTo sender
+      pollInterrupter ! Interrupt
 
     case message: Message ⇒
       sender match {
         case `manager` ⇒ notifyListener(message)
-        case _         ⇒ manager ! message
+        case _ ⇒
+          manager ! message
+          pollInterrupter ! Interrupt
       }
   }
 
