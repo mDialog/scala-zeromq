@@ -2,27 +2,29 @@ package zeromq
 
 import annotation.tailrec
 import org.zeromq.ZMQ
-import akka.actor.{ Actor, ActorRef, Terminated }
+import akka.actor.{ Actor, ActorRef, Props, Terminated }
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 
 private[zeromq] case class NewSocket(handler: ActorRef, socketType: SocketType, options: Seq[SocketParam])
 private[zeromq] case object SocketCreated
+private[zeromq] case class ConnectToInterrupter(address: String)
 private[zeromq] case object Poll
 
 case object Closed
 
-private[zeromq] class SocketManager extends Actor {
+private[zeromq] object SocketManager {
+  def apply(zmqContext: ZMQ.Context): Props =
+    Props(classOf[SocketManager], zmqContext)
+}
+
+private[zeromq] class SocketManager(zmqContext: ZMQ.Context) extends Actor {
 
   private val config = context.system.settings.config
-  private val zmqContext = ZMQ.context(1)
   private val poller: ZMQ.Poller = zmqContext.poller
 
   val interrupter = zmqContext.socket(ZMQ.SUB)
   val interrupterPollIndex = poller.register(interrupter, ZMQ.Poller.POLLIN)
-
-  interrupter.connect(config.getString("zeromq.poll-interrupt-socket"))
-  interrupter.subscribe(context.system.name.getBytes)
 
   private val pollTimeoutSetting = config.getMilliseconds("zeromq.poll-timeout")
 
@@ -37,6 +39,7 @@ private[zeromq] class SocketManager extends Actor {
 
   private val sockets = collection.mutable.Map.empty[ActorRef, Socket]
 
+  self ! ConnectToInterrupter(config.getString("zeromq.poll-interrupt-socket"))
   self ! Poll
 
   def receive = {
@@ -76,6 +79,10 @@ private[zeromq] class SocketManager extends Actor {
     case Terminated(handler) ⇒
       sockets.get(handler) map (_.close)
       sockets -= handler
+
+    case ConnectToInterrupter(address) ⇒
+      interrupter.connect(address)
+      interrupter.subscribe(context.system.name.getBytes)
 
     case Poll ⇒
       if (poller.poll(pollTimeout) > 0) {
