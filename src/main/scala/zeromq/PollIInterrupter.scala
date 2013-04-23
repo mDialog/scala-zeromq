@@ -1,16 +1,19 @@
 package zeromq
 
-import akka.actor.Actor
+import akka.actor.{ Actor, Props }
 import org.zeromq.ZMQ
 import akka.util.ByteString
 
 private[zeromq] case object Interrupt
 
-private[zeromq] class PollInterrupter extends Actor {
+private[zeromq] object PollInterrupter {
+  def apply(zmqContext: ZMQ.Context): Props = Props(new PollInterrupter(zmqContext))
+}
+
+private[zeromq] class PollInterrupter(zmqContext: ZMQ.Context) extends Actor {
   private val config = context.system.settings.config
-  private val zmqContext = ZMQ.context(1)
   private val socket = zmqContext.socket(ZMQ.PUB)
-  private val message = context.system.name.getBytes
+  private val message = Array.empty[Byte]
 
   socket.bind(config.getString("zeromq.poll-interrupt-socket"))
 

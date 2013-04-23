@@ -7,6 +7,11 @@ import akka.util.Duration
 import java.util.concurrent.TimeUnit
 import akka.util.{ ByteString, Timeout }
 
+private[zeromq] object SocketHandler {
+  def apply(socketManager: ActorRef, pollInterrupter: ActorRef, socketType: SocketType, socketParams: Seq[Param]): Props =
+    Props(new SocketHandler(socketManager, pollInterrupter, socketType, socketParams))
+}
+
 private[zeromq] class SocketHandler(manager: ActorRef, pollInterrupter: ActorRef, socketType: SocketType, socketParams: Seq[Param]) extends Actor {
   import context.dispatcher
 
