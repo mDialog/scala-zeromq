@@ -14,7 +14,7 @@ private[zeromq] object PollInterrupter {
 private[zeromq] class PollInterrupter(zmqContext: ZMQ.Context) extends Actor {
   private val config = context.system.settings.config
   private val socket = zmqContext.socket(ZMQ.PUB)
-  private val message = context.system.name.getBytes
+  private val message = Array.empty[Byte]
 
   socket.bind(config.getString("zeromq.poll-interrupt-socket"))
 

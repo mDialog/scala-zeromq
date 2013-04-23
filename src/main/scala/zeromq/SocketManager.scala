@@ -82,7 +82,7 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context) extends Actor {
 
     case ConnectToInterrupter(address) ⇒
       interrupter.connect(address)
-      interrupter.subscribe(context.system.name.getBytes)
+      interrupter.subscribe(Array.empty[Byte])
 
     case Poll ⇒
       if (poller.poll(pollTimeout) > 0) {
