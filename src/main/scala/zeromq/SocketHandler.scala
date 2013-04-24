@@ -17,13 +17,7 @@ private[zeromq] class SocketHandler(manager: ActorRef, pollInterrupter: ActorRef
 
   implicit val timeout = Timeout(Duration(context.system.settings.config.getMilliseconds("zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
 
-  private var listener: Option[ActorRef] = socketParams.find {
-    case l: Listener ⇒ true
-    case _           ⇒ false
-  } match {
-    case Some(Listener(l)) ⇒ Some(l)
-    case _                 ⇒ None
-  }
+  private var listener: Option[ActorRef] = socketParams.collect({ case Listener(l) ⇒ l }).headOption
 
   private val params = socketParams.collect({ case a: SocketParam ⇒ a }).to[collection.immutable.Seq]
 
