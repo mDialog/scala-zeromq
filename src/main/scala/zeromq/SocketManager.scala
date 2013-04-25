@@ -1,15 +1,13 @@
 package zeromq
 
 import annotation.tailrec
-import org.zeromq.ZMQ
-import akka.actor.{ Actor, ActorRef, Props, Terminated }
+import org.zeromq.{ ZMQ, ZMQException }
+import akka.actor.{ Actor, ActorRef, Props, Status, Terminated }
 import akka.util.Duration
 import akka.util.duration._
 import java.util.concurrent.TimeUnit
 
 private[zeromq] case class NewSocket(handler: ActorRef, socketType: SocketType, options: Seq[SocketParam])
-private[zeromq] case object SocketCreated
-private[zeromq] case class ConnectToInterrupter(address: String)
 private[zeromq] case object Poll
 
 case object Closed
@@ -19,12 +17,16 @@ private[zeromq] object SocketManager {
 }
 
 private[zeromq] class SocketManager(zmqContext: ZMQ.Context) extends Actor {
+  import Status._
 
   private val config = context.system.settings.config
   private val poller: ZMQ.Poller = zmqContext.poller
 
   val interrupter = zmqContext.socket(ZMQ.SUB)
   val interrupterPollIndex = poller.register(interrupter, ZMQ.Poller.POLLIN)
+
+  interrupter.bind(config.getString("zeromq.poll-interrupt-socket"))
+  interrupter.subscribe(Array.empty[Byte])
 
   private val pollTimeoutSetting = config.getMilliseconds("zeromq.poll-timeout")
 
@@ -39,50 +41,14 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context) extends Actor {
 
   private val sockets = collection.mutable.Map.empty[ActorRef, Socket]
 
-  self ! ConnectToInterrupter(config.getString("zeromq.poll-interrupt-socket"))
   self ! Poll
 
   def receive = {
-    case NewSocket(handler, socketType, options) ⇒
-      val socket = Socket(zmqContext, poller, socketType)
-
-      // Perform intialization in order: socket options, connection options,
-      // then pubsub options.
-      val groupedOptions = options groupBy {
-        case _: SocketOption  ⇒ "socket-options"
-        case _: ConnectOption ⇒ "connect-options"
-        case _: PubSubOption  ⇒ "pubsub-options"
+    case message: Message ⇒
+      sockets.get(sender) map {
+        case socket: Writeable ⇒
+          socket.queueForSend(message)
       }
-
-      groupedOptions.get("socket-options") map { options ⇒
-        options foreach { option ⇒
-          socket.setSocketOption(option.asInstanceOf[SocketOption])
-        }
-      }
-
-      groupedOptions.get("connect-options") map { options ⇒
-        options foreach { option ⇒
-          handleConnectOption(socket, option.asInstanceOf[ConnectOption])
-        }
-      }
-
-      groupedOptions.get("pubsub-options") map { options ⇒
-        options foreach { option ⇒
-          handlePubSubOption(socket, option.asInstanceOf[PubSubOption])
-        }
-      }
-
-      sockets(handler) = socket
-      context.watch(handler)
-      sender ! SocketCreated
-
-    case Terminated(handler) ⇒
-      sockets.get(handler) map (_.close)
-      sockets -= handler
-
-    case ConnectToInterrupter(address) ⇒
-      interrupter.connect(address)
-      interrupter.subscribe(Array.empty[Byte])
 
     case Poll ⇒
       if (poller.poll(pollTimeout) > 0) {
@@ -98,22 +64,67 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context) extends Actor {
 
       self ! Poll
 
-    case message: Message ⇒
-      sockets.get(sender) map {
-        case socket: Writeable ⇒ socket.queueForSend(message)
-      }
+    case Terminated(handler) ⇒
+      sockets.get(handler) map (_.close)
+      sockets -= handler
 
-    case param: SocketParam ⇒
-      sockets.get(sender) map { socket ⇒
-        param match {
-          case o: ConnectOption ⇒ handleConnectOption(socket, o)
-          case o: PubSubOption  ⇒ handlePubSubOption(socket, o)
-          case o: SocketOption  ⇒ socket.setSocketOption(o)
+    case NewSocket(handler, socketType, options) ⇒
+      try {
+        val socket = Socket(zmqContext, poller, socketType)
+
+        // Perform intialization in order: socket options, connection options,
+        // then pubsub options.
+        val groupedOptions = options groupBy {
+          case _: SocketOption  ⇒ "socket-options"
+          case _: ConnectOption ⇒ "connect-options"
+          case _: PubSubOption  ⇒ "pubsub-options"
         }
+
+        groupedOptions.get("socket-options") map { options ⇒
+          options foreach { option ⇒
+            socket.setSocketOption(option.asInstanceOf[SocketOption])
+          }
+        }
+
+        groupedOptions.get("connect-options") map { options ⇒
+          options foreach { option ⇒
+            handleConnectOption(socket, option.asInstanceOf[ConnectOption])
+          }
+        }
+
+        groupedOptions.get("pubsub-options") map { options ⇒
+          options foreach { option ⇒
+            handlePubSubOption(socket, option.asInstanceOf[PubSubOption])
+          }
+        }
+
+        sockets(handler) = socket
+        context.watch(handler)
+        sender ! Success(handler)
+      } catch {
+        case e: ZMQException ⇒ sender ! Failure(e)
       }
 
-    case query: SocketOptionQuery ⇒
-      sockets.get(sender) map (_.getSocketOption(query)) map (sender ! _)
+    case (handler: ActorRef, param: SocketParam) ⇒
+      try {
+        sockets.get(handler) map { socket ⇒
+          param match {
+            case o: ConnectOption ⇒ handleConnectOption(socket, o)
+            case o: PubSubOption  ⇒ handlePubSubOption(socket, o)
+            case o: SocketOption  ⇒ socket.setSocketOption(o)
+          }
+        }
+        sender ! Success(handler)
+      } catch {
+        case e: ZMQException ⇒ sender ! Failure(e)
+      }
+
+    case (handler: ActorRef, query: SocketOptionQuery) ⇒
+      try {
+        sockets.get(handler) map (_.getSocketOption(query)) map (sender ! _)
+      } catch {
+        case e: ZMQException ⇒ sender ! Failure(e)
+      }
   }
 
   override def postStop = {

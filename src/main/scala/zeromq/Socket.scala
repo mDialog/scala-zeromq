@@ -39,10 +39,28 @@ private[zeromq] object SocketState {
 
 private[zeromq] abstract class Socket(val socket: ZMQ.Socket, val poller: ZMQ.Poller) {
 
-  var pollIndex: Int
+  var pollIndex: Int = -1
+  var pollMask: Int = 0
 
-  def isReadable: Boolean
-  def isWriteable: Boolean
+  def setPollMask(mask: Int) {
+    if (pollMask != mask) {
+      pollMask = mask
+      if (pollIndex != -1)
+        poller.unregister(socket)
+      if (pollMask != 0)
+        pollIndex = poller.register(socket, pollMask)
+    }
+  }
+
+  def setPollFlag(flags: Int) = setPollMask(pollMask | flags)
+
+  def clearPollFlag(flags: Int) = setPollMask(pollMask - (pollMask & flags))
+
+  def canSend: Boolean
+
+  def isReadable: Boolean = poller.pollin(pollIndex)
+
+  def isWriteable: Boolean = canSend && poller.pollout(pollIndex)
 
   def receive(messages: IndexedSeq[Message] = Vector.empty): IndexedSeq[Message]
   def send(): Unit
@@ -141,15 +159,21 @@ private[zeromq] trait Writeable { self: Socket ⇒
     }
 
   def send(): Unit =
-    if (sendBuffer.nonEmpty && sendMessage(sendBuffer.remove(0))) send
+    if (sendBuffer.nonEmpty) {
+      if (sendMessage(sendBuffer.remove(0))) send
+    } else {
+      clearPollFlag(ZMQ.Poller.POLLOUT)
+    }
 
-  def queueForSend(message: Message) = sendBuffer.append(message)
+  def queueForSend(message: Message) {
+    sendBuffer.append(message)
+    setPollFlag(ZMQ.Poller.POLLOUT)
+  }
 
-  def isWriteable = sendBuffer.nonEmpty && poller.pollout(pollIndex)
+  def canSend = sendBuffer.nonEmpty
 }
 
 private[zeromq] trait Readable { self: Socket ⇒
-
   @tailrec final def receiveMessage(currentFrames: Vector[ByteString] = Vector.empty): Option[Message] =
     socket.recv(ZMQ.NOBLOCK) match {
       case null ⇒ None
@@ -169,16 +193,15 @@ private[zeromq] trait Readable { self: Socket ⇒
       case None          ⇒ messages
       case Some(message) ⇒ receive(messages :+ message)
     }
-
-  def isReadable = poller.pollin(pollIndex)
 }
 
-private[zeromq] class AlternatingSocket(socket: ZMQ.Socket, poller: ZMQ.Poller, var state: SocketState) extends Socket(socket, poller) with Readable with Writeable {
+private[zeromq] class AlternatingSocket(socket: ZMQ.Socket, poller: ZMQ.Poller, var state: SocketState)
+    extends Socket(socket, poller) with Readable with Writeable {
   import SocketState._
 
-  var pollIndex = state match {
-    case Send    ⇒ -1
-    case Receive ⇒ poller.register(socket, ZMQ.Poller.POLLIN)
+  state match {
+    case Send    ⇒
+    case Receive ⇒ setPollFlag(ZMQ.Poller.POLLIN)
   }
 
   override def isReadable = state match {
@@ -190,27 +213,22 @@ private[zeromq] class AlternatingSocket(socket: ZMQ.Socket, poller: ZMQ.Poller, 
     case Send ⇒ throw new UnsupportedOperationException()
     case Receive ⇒
       receiveMessage() match {
-        case Some(message: Message) ⇒
-          poller.unregister(socket)
-          pollIndex = -1
+        case Some(message) ⇒
+          clearPollFlag(ZMQ.Poller.POLLIN)
           state = Send
-
           IndexedSeq(message)
 
         case None ⇒ messages
       }
   }
 
-  override def isWriteable = state match {
-    case Send    ⇒ super.isWriteable
+  override def canSend = state match {
+    case Send    ⇒ super.canSend
     case Receive ⇒ false
   }
 
   override def queueForSend(message: Message) = state match {
-    case Send ⇒
-      if (sendBuffer.isEmpty && (pollIndex == -1))
-        pollIndex = poller.register(socket, ZMQ.Poller.POLLOUT)
-      super.queueForSend(message)
+    case Send    ⇒ super.queueForSend(message)
     case Receive ⇒ throw new UnsupportedOperationException()
   }
 
@@ -218,70 +236,34 @@ private[zeromq] class AlternatingSocket(socket: ZMQ.Socket, poller: ZMQ.Poller, 
     case Send ⇒
       if (sendBuffer.nonEmpty) {
         sendMessage(sendBuffer.remove(0))
-
-        poller.unregister(socket)
+        setPollFlag(ZMQ.Poller.POLLIN)
         state = Receive
-        pollIndex = poller.register(socket, ZMQ.Poller.POLLIN)
       }
 
     case Receive ⇒ throw new UnsupportedOperationException()
   }
-
 }
 
 private[zeromq] trait Bidirectional extends Readable with Writeable {
   self: Socket ⇒
 
-  var pollIndex = poller.register(socket, ZMQ.Poller.POLLIN)
-
-  override def send() = {
-    super.send
-    if (sendBuffer.isEmpty) {
-      poller.unregister(socket)
-      pollIndex = poller.register(socket, ZMQ.Poller.POLLIN)
-    }
-  }
-
-  override def queueForSend(message: Message) = {
-    if (sendBuffer.isEmpty) {
-      poller.unregister(socket)
-      pollIndex = poller.register(socket, ZMQ.Poller.POLLIN | ZMQ.Poller.POLLOUT)
-    }
-    super.queueForSend(message)
-  }
+  setPollFlag(ZMQ.Poller.POLLIN)
 }
 
 private[zeromq] trait SendOnly extends Writeable {
   self: Socket ⇒
 
-  var pollIndex = -1
-
-  def isReadable = false
+  override def isReadable = false
 
   def receive(messages: IndexedSeq[Message] = Vector.empty) = throw new UnsupportedOperationException()
-
-  override def send() = {
-    super.send
-    if (sendBuffer.isEmpty) {
-      poller.unregister(socket)
-      pollIndex = -1
-    }
-  }
-
-  override def queueForSend(message: Message) = {
-    if (sendBuffer.isEmpty && (pollIndex == -1))
-      pollIndex = poller.register(socket, ZMQ.Poller.POLLOUT)
-
-    super.queueForSend(message)
-  }
 }
 
 private[zeromq] trait ReceiveOnly extends Readable {
   self: Socket ⇒
 
-  var pollIndex = poller.register(socket, ZMQ.Poller.POLLIN)
+  setPollFlag(ZMQ.Poller.POLLIN)
 
-  def isWriteable = false
+  def canSend = false
 
   def send() = throw new UnsupportedOperationException()
 }

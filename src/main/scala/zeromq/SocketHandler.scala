@@ -17,13 +17,7 @@ private[zeromq] class SocketHandler(manager: ActorRef, pollInterrupter: ActorRef
 
   implicit val timeout = Timeout(Duration(context.system.settings.config.getMilliseconds("zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
 
-  private var listener: Option[ActorRef] = socketParams.find {
-    case l: Listener ⇒ true
-    case _           ⇒ false
-  } match {
-    case Some(Listener(l)) ⇒ Some(l)
-    case _                 ⇒ None
-  }
+  private var listener: Option[ActorRef] = socketParams.collect({ case Listener(l) ⇒ l }).headOption
 
   private val params = socketParams.collect({ case a: SocketParam ⇒ a })
 
@@ -32,6 +26,14 @@ private[zeromq] class SocketHandler(manager: ActorRef, pollInterrupter: ActorRef
   Await.result(registration, timeout.duration)
 
   def receive = {
+    case message: Message ⇒
+      sender match {
+        case `manager` ⇒ notifyListener(message)
+        case _ ⇒
+          manager ! message
+          pollInterrupter ! Interrupt
+      }
+
     case Listener(l) ⇒
       listener map (context.unwatch(_))
       context.watch(l)
@@ -41,20 +43,12 @@ private[zeromq] class SocketHandler(manager: ActorRef, pollInterrupter: ActorRef
       if (listener == Some(l)) listener = None
 
     case param: SocketParam ⇒
-      manager ! param
+      manager ? (self, param) pipeTo sender
       pollInterrupter ! Interrupt
 
     case query: SocketOptionQuery ⇒
-      manager ? query pipeTo sender
+      manager ? (self, query) pipeTo sender
       pollInterrupter ! Interrupt
-
-    case message: Message ⇒
-      sender match {
-        case `manager` ⇒ notifyListener(message)
-        case _ ⇒
-          manager ! message
-          pollInterrupter ! Interrupt
-      }
   }
 
   override def postStop: Unit = notifyListener(Closed)
