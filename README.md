@@ -6,12 +6,12 @@
 
 scala-zeromq facilitates communication use the [ZeroMQ](http://zeromq.org) 
 messaging library. ZeroMQ is a message-orient socket communication library that
-support several high-level messaging patterns, including request-reply, publish-
-subscribe and push-pull. For a thorough description of how ZeroMQ works, read 
-the [guide](http://zguide.zeromq.org). 
+support several high-level messaging patterns, including request-reply, 
+publish-subscribe and push-pull. For a thorough description of how ZeroMQ works, 
+read the [guide](http://zguide.zeromq.org). 
 
 Unlike many ZeroMQ libraries, scala-zeromq provides a *completely threadsafe*
-ZeroMQ socket inteface. All socket communications are conducted using an
+ZeroMQ socket interface. All socket communications are conducted using an
 immutable handle called a SocketRef. Under the hood, scala-zeromq uses
 [Akka](http://akka.io) to ensure all socket interactions are handled safely and
 efficiently.
@@ -24,7 +24,7 @@ In your build.sbt
 
     libraryDependencies += "com.mdialog" %% "scala-zeromq" % "0.2.0-SNAPSHOT"
 
-To get started, create some sockets
+To get started, create some sockets.
 
     val pushSocket = ZeroMQ.socket(SocketType.Push)
     val pullSocket = ZeroMQ.socket(SocketType.Pull)
@@ -45,30 +45,38 @@ objects.
     // message: zeromq.Message = Message(ByteString("one"), ByteString("two")))
 
 
-If you'd like to stop receive requests on a socket, close it.
+If you'd like to stop receiving messages on a socket, close it.
 
     pushSocket.close
 
 ## Using with Akka
 
-scala-zeromq is actually implemented as an Akka Extension. To use it with Akka,
+scala-zeromq is implemented as an Akka Extension. To use it with Akka,
 load the extension either manually or automatically (through application 
 configuration). 
 
-Use the extension to request a new socket. Assign an ActorRef as the listener 
-if you expect the socket to receive messages.
+Use the extension to request a new socket. Assign an ActorRef as listener if you
+expect the socket to receive messages.
 
     val zmq = ZeroMQExtension(system)
 
     val pushSocket = zmq.newSocket(SocketType.Push, Bind("tcp://localhost:5560"))
     val pullSocket = zmq.newSocket(SocketType.Pull, Connect("tcp://localhost:5560"), Listener(anActorRef))
 
-To send messages over the socket, send them to the socket actor
+To send messages over the socket, send them to the socket actor.
 
     pushSocket ! Message(ByteString("one"), ByteString("two"))
 
 Messages are received as zeromq.Message objects sent to the actor assigned as
 each socket's listener.
+
+You can get and set options after socket creation by sending messages to the 
+socket actor.
+
+    pushSocket ! Rate(100) // fire and forget
+    pushSocket ? Rate(100) // return a future, await result to ensure change takes effect
+
+    pushSocket ? Rate // returns Rate option
 
 ## Documentation
 
