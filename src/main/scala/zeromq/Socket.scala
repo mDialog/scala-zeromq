@@ -158,12 +158,13 @@ private[zeromq] trait Writeable { self: Socket ⇒
       }
     }
 
-  def send(): Unit =
-    if (sendBuffer.nonEmpty) {
-      if (sendMessage(sendBuffer.remove(0))) send
-    } else {
-      clearPollFlag(ZMQ.Poller.POLLOUT)
-    }
+  @tailrec final protected def sendAll: Unit =
+    if (sendBuffer.nonEmpty && sendMessage(sendBuffer.remove(0))) sendAll
+
+  def send(): Unit = {
+    sendAll
+    if (sendBuffer.isEmpty) clearPollFlag(ZMQ.Poller.POLLOUT)
+  }
 
   def queueForSend(message: Message) {
     sendBuffer.append(message)
