@@ -78,6 +78,10 @@ socket actor.
 
     pushSocket ? Rate // returns Rate option
 
+Close the socket by sending a PoisonPill to the socket actor.
+
+    pullSocket ! PoisonPill
+
 ## Documentation
 
 Read the API documentation here: [http://mdialog.github.io/api/scala-zeromq-0.2.0/](http://mdialog.github.io/api/scala-zeromq-0.2.0/)
