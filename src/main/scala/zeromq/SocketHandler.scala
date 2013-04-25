@@ -26,6 +26,14 @@ private[zeromq] class SocketHandler(manager: ActorRef, pollInterrupter: ActorRef
   Await.result(registration, timeout.duration)
 
   def receive = {
+    case message: Message ⇒
+      sender match {
+        case `manager` ⇒ notifyListener(message)
+        case _ ⇒
+          manager ! message
+          pollInterrupter ! Interrupt
+      }
+
     case Listener(l) ⇒
       listener map (context.unwatch(_))
       context.watch(l)
@@ -35,20 +43,12 @@ private[zeromq] class SocketHandler(manager: ActorRef, pollInterrupter: ActorRef
       if (listener == Some(l)) listener = None
 
     case param: SocketParam ⇒
-      manager ! param
+      manager ? (self, param) pipeTo sender
       pollInterrupter ! Interrupt
 
     case query: SocketOptionQuery ⇒
-      manager ? query pipeTo sender
+      manager ? (self, query) pipeTo sender
       pollInterrupter ! Interrupt
-
-    case message: Message ⇒
-      sender match {
-        case `manager` ⇒ notifyListener(message)
-        case _ ⇒
-          manager ! message
-          pollInterrupter ! Interrupt
-      }
   }
 
   override def postStop: Unit = notifyListener(Closed)

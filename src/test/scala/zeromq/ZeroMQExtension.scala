@@ -4,20 +4,21 @@ package zeromq
 import language.postfixOps
 
 import org.scalatest.matchers.MustMatchers
-import org.scalatest.{ WordSpec, BeforeAndAfterAll }
-import akka.testkit.{ TestProbe, DefaultTimeout, TestKit }
-import scala.concurrent.duration._
-import akka.actor.{ Cancellable, Actor, Props, ActorSystem, ActorRef }
-import akka.util.{ ByteString, Timeout }
+import org.scalatest.FunSpec
+import akka.testkit.{ TestProbe, TestKit }
 
-class SocketSpec extends TestKit(ActorSystem("SocketSpec")) with WordSpec with MustMatchers with BeforeAndAfterAll {
+import scala.concurrent.duration._
+import akka.util.{ ByteString, Timeout }
+import akka.actor.{ Actor, ActorSystem, ActorRef, Cancellable }
+
+class ZeroMQExtensionSpec extends TestKit(ActorSystem("ZeroMQExtensionSpec")) with FunSpec with MustMatchers {
 
   implicit val timeout: Timeout = Timeout(2 seconds)
 
   def zmq = ZeroMQExtension(system)
 
-  "Socket" should {
-    "support pub-sub connections" in {
+  describe("ZeroMQExtension") {
+    it("should support pub-sub connections") {
       val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
 
       val subscriberProbe = TestProbe()
@@ -51,7 +52,7 @@ class SocketSpec extends TestKit(ActorSystem("SocketSpec")) with WordSpec with M
       }.last must equal(Closed)
     }
 
-    "support req-rep connections" in {
+    it("should support req-rep connections") {
       val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
 
       val requesterProbe = TestProbe()
@@ -75,7 +76,7 @@ class SocketSpec extends TestKit(ActorSystem("SocketSpec")) with WordSpec with M
       }
     }
 
-    "should support push-pull connections" in {
+    it("should support push-pull connections") {
       val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
 
       val pullerProbe = TestProbe()

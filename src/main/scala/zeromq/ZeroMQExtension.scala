@@ -10,7 +10,7 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
   override def createExtension(system: ExtendedActorSystem): ZeroMQExtension = new ZeroMQExtension(system)
 }
 
-class ZeroMQExtension(system: ActorSystem) extends Extension {
+class ZeroMQExtension(val system: ActorSystem) extends Extension {
 
   private val zmqContext = ZMQ.context(1)
   private val socketCount = new AtomicInteger()
