@@ -91,7 +91,7 @@ class SocketRefSpec extends FunSpec {
       val executionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
       val recvFuture = Future(pull.recv)(executionContext)
 
-      val message = Message(ByteString("test-receive-message-option"))
+      val message = Message(ByteString("test-receive-message"))
       push.send(message)
 
       assert(Await.result(recvFuture, 50.millis) === message)
@@ -121,23 +121,23 @@ class SocketRefSpec extends FunSpec {
     }
   }
 
-  describe("setOption") {
+  describe("setSocketOption") {
     it("should set socket option") {
       val push = ZeroMQ.socket(SocketType.Push)
 
-      push.setOption(Linger(0))
+      push.setSocketOption(Linger(0))
 
       assert(true)
     }
   }
 
-  describe("getOption") {
+  describe("getSocketOption") {
     it("should get socket option") {
       val push = ZeroMQ.socket(SocketType.Push)
 
-      push.setOption(Rate(100))
+      push.setSocketOption(Rate(100))
 
-      assert(push.getOption(Rate) === 100)
+      assert(push.getSocketOption(Rate) === 100)
     }
   }
 

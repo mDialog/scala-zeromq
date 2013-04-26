@@ -4,26 +4,19 @@ import akka.actor._
 import akka.pattern.{ ask, pipe }
 import akka.dispatch.Await
 import akka.util.Duration
+import akka.util.duration._
 import java.util.concurrent.TimeUnit
 import akka.util.{ ByteString, Timeout }
 
 private[zeromq] object SocketHandler {
-  def apply(socketManager: ActorRef, pollInterrupter: ActorRef, socketType: SocketType, socketParams: Seq[Param]): Props =
-    Props(new SocketHandler(socketManager, pollInterrupter, socketType, socketParams))
+  def apply(socketManager: ActorRef, pollInterrupter: ActorRef, listener: Option[ActorRef]): Props =
+    Props(new SocketHandler(socketManager, pollInterrupter, listener))
 }
 
-private[zeromq] class SocketHandler(manager: ActorRef, pollInterrupter: ActorRef, socketType: SocketType, socketParams: Seq[Param]) extends Actor {
+private[zeromq] class SocketHandler(manager: ActorRef, pollInterrupter: ActorRef, var listener: Option[ActorRef]) extends Actor {
   import context.dispatcher
 
-  implicit val timeout = Timeout(Duration(context.system.settings.config.getMilliseconds("zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
-
-  private var listener: Option[ActorRef] = socketParams.collect({ case Listener(l) ⇒ l }).headOption
-
-  private val params = socketParams.collect({ case a: SocketParam ⇒ a })
-
-  private val registration = manager ? NewSocket(self, socketType, params)
-  pollInterrupter ! Interrupt
-  Await.result(registration, timeout.duration)
+  implicit val timeout = Timeout(500.millis)
 
   def receive = {
     case message: Message ⇒

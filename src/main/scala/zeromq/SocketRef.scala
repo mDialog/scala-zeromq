@@ -44,10 +44,10 @@ case class SocketRef(socketType: SocketType)(implicit extension: ZeroMQExtension
   def connect(address: String): Unit =
     Await.result(socket ? Connect(address), timeout.duration)
 
-  def setOption(option: SocketOption): Unit =
+  def setSocketOption(option: SocketOption): Unit =
     Await.result(socket ? option, timeout.duration)
 
-  def getOption(query: SocketOptionQuery) =
+  def getSocketOption(query: SocketOptionQuery) =
     Await.result(socket ? query, timeout.duration)
 
   def subscribe(topic: ByteString): Unit =

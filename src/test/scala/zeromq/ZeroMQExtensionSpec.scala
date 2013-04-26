@@ -1,3 +1,4 @@
+
 package zeromq
 
 import org.scalatest.matchers.MustMatchers
@@ -6,6 +7,9 @@ import akka.testkit.{ TestProbe, TestKit }
 import akka.actor.{ Actor, ActorSystem, ActorRef, Cancellable }
 import akka.util.{ ByteString, Timeout }
 import akka.util.duration._
+
+// Much credit goes to akka-zeromq (https://github.com/akka/akka) for the 
+// contents of this file.
 
 class ZeroMQExtensionSpec extends TestKit(ActorSystem("ZeroMQExtensionSpec")) with FunSpec with MustMatchers {
 
