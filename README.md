@@ -31,17 +31,20 @@ To get started with a quick example, create a few sockets:
 
 Then, bind one to a socket address and connect the other:
 
-    pushSocket.bind("tcp://localhost:5560")
-    pullSocket.connect("tcp://localhost:5560")
+    pushSocket.bind("tcp://127.0.0.1:5560")
+    pullSocket.connect("tcp://127.0.0.1:5560")
 
 ZeroMQ supports several message transport protocols.
 
-Next, send and receive a message:
+Next, send and receive a couple ofi message:
 
     pushSocket.send(Message(ByteString("one"), ByteString("two")))
+    pullSocket.recv // blocks indefinitely awaiting message
+    // zeromq.Message = Message(ByteString("one"), ByteString("two"))
 
-    val message = pullSocket.recv // blocks indefinitely awaiting message
-    // message: zeromq.Message = Message(ByteString("one"), ByteString("two")))
+    pushSocket.send(Message(ByteString("three"), ByteString("four")))
+    pullSocket.recvOption // returns immediately with message, if one is waiting
+    // Option[zeromq.Message] = Some(Message(ByteString("three"), ByteString("four")))
 
 A scala-zeromq Message is an collection of Akka
 [ByteString](http://doc.akka.io/api/akka/snapshot/#akka.util.ByteString) 
