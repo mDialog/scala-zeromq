@@ -49,6 +49,9 @@ If you'd like to stop receiving messages on a socket, close it.
 
     pushSocket.close
 
+Once closed a socket can no longer be used. If you need to send or receive
+messages again you must create a new socket.
+
 ## Using with Akka
 
 scala-zeromq is implemented as an Akka Extension. To use it with Akka,

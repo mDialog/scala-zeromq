@@ -121,23 +121,23 @@ class SocketRefSpec extends FunSpec {
     }
   }
 
-  describe("setOpt") {
+  describe("setSocketOption") {
     it("should set socket option") {
       val push = ZeroMQ.socket(SocketType.Push)
 
-      push.setOption(Linger(0))
+      push.setSocketOption(Linger(0))
 
       assert(true)
     }
   }
 
-  describe("getOpt") {
+  describe("getSocketOption") {
     it("should get socket option") {
       val push = ZeroMQ.socket(SocketType.Push)
 
-      push.setOption(Rate(100))
+      push.setSocketOption(Rate(100))
 
-      assert(push.getOption(Rate) === 100)
+      assert(push.getSocketOption(Rate) === 100)
     }
   }
 

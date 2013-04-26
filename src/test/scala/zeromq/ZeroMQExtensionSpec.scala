@@ -11,6 +11,9 @@ import scala.concurrent.duration._
 import akka.util.{ ByteString, Timeout }
 import akka.actor.{ Actor, ActorSystem, ActorRef, Cancellable }
 
+// Much credit goes to akka-zeromq (https://github.com/akka/akka) for the 
+// contents of this file.
+
 class ZeroMQExtensionSpec extends TestKit(ActorSystem("ZeroMQExtensionSpec")) with FunSpec with MustMatchers {
 
   implicit val timeout: Timeout = Timeout(2 seconds)

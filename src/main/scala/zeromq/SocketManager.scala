@@ -5,28 +5,31 @@ import org.zeromq.{ ZMQ, ZMQException }
 import akka.actor.{ Actor, ActorRef, Props, Status, Terminated }
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
-private[zeromq] case class NewSocket(handler: ActorRef, socketType: SocketType, options: Seq[SocketParam])
+private[zeromq] case class NewSocket(socketType: SocketType, options: Seq[Param])
 private[zeromq] case object Poll
 
 case object Closed
 
 private[zeromq] object SocketManager {
-  def apply(zmqContext: ZMQ.Context): Props =
-    Props(classOf[SocketManager], zmqContext)
+  def apply(zmqContext: ZMQ.Context, interrupter: ActorRef): Props =
+    Props(classOf[SocketManager], zmqContext, interrupter)
 }
 
-private[zeromq] class SocketManager(zmqContext: ZMQ.Context) extends Actor {
+private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorRef) extends Actor {
   import Status._
 
   private val config = context.system.settings.config
   private val poller: ZMQ.Poller = zmqContext.poller
+  private val socketCount = new AtomicInteger()
+  private val sockets = collection.mutable.Map.empty[ActorRef, Socket]
 
-  val interrupter = zmqContext.socket(ZMQ.SUB)
-  val interrupterPollIndex = poller.register(interrupter, ZMQ.Poller.POLLIN)
+  val interruptListener = zmqContext.socket(ZMQ.SUB)
+  val interruptListenerPollIndex = poller.register(interruptListener, ZMQ.Poller.POLLIN)
 
-  interrupter.bind(config.getString("zeromq.poll-interrupt-socket"))
-  interrupter.subscribe(Array.empty[Byte])
+  interruptListener.bind(config.getString("zeromq.poll-interrupt-socket"))
+  interruptListener.subscribe(Array.empty[Byte])
 
   private val pollTimeoutSetting = config.getMilliseconds("zeromq.poll-timeout")
 
@@ -38,8 +41,6 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context) extends Actor {
 
   private val pollTimeout =
     Duration(pollTimeoutSetting, "millis").toUnit(pollTimeoutUnit).toLong
-
-  private val sockets = collection.mutable.Map.empty[ActorRef, Socket]
 
   self ! Poll
 
@@ -59,51 +60,29 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context) extends Actor {
           if (socket.isWriteable) socket.send()
         }
 
-        if (poller.pollin(interrupterPollIndex)) readInterrupts
+        if (poller.pollin(interruptListenerPollIndex)) readInterrupts
       }
 
       self ! Poll
 
-    case Terminated(handler) ⇒
-      sockets.get(handler) map (_.close)
-      sockets -= handler
-
-    case NewSocket(handler, socketType, options) ⇒
+    case NewSocket(socketType, options) ⇒
       try {
-        val socket = Socket(zmqContext, poller, socketType)
+        val socketParams = options.collect({ case p: SocketParam ⇒ p })
+        val socket = newSocket(socketType, socketParams)
 
-        // Perform intialization in order: socket options, connection options,
-        // then pubsub options.
-        val groupedOptions = options groupBy {
-          case _: SocketOption  ⇒ "socket-options"
-          case _: ConnectOption ⇒ "connect-options"
-          case _: PubSubOption  ⇒ "pubsub-options"
-        }
-
-        groupedOptions.get("socket-options") map { options ⇒
-          options foreach { option ⇒
-            socket.setSocketOption(option.asInstanceOf[SocketOption])
-          }
-        }
-
-        groupedOptions.get("connect-options") map { options ⇒
-          options foreach { option ⇒
-            handleConnectOption(socket, option.asInstanceOf[ConnectOption])
-          }
-        }
-
-        groupedOptions.get("pubsub-options") map { options ⇒
-          options foreach { option ⇒
-            handlePubSubOption(socket, option.asInstanceOf[PubSubOption])
-          }
-        }
+        val listener = options.collect({ case Listener(l) ⇒ l }).headOption
+        val handler = context.actorOf(SocketHandler(self, interrupter, listener), "socket-handler-" + socketCount.getAndIncrement())
 
         sockets(handler) = socket
-        context.watch(handler)
-        sender ! Success(handler)
+
+        sender ! handler
       } catch {
         case e: ZMQException ⇒ sender ! Failure(e)
       }
+
+    case Terminated(handler) ⇒
+      sockets.get(handler) map (_.close)
+      sockets -= handler
 
     case (handler: ActorRef, param: SocketParam) ⇒
       try {
@@ -128,12 +107,44 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context) extends Actor {
   }
 
   override def postStop = {
-    interrupter.close
+    interruptListener.close
     zmqContext.term
   }
 
+  private def newSocket(socketType: SocketType, options: Seq[SocketParam]) = {
+    val socket = Socket(zmqContext, poller, socketType)
+
+    // Perform intialization in order: socket options, connection options,
+    // then pubsub options.
+    val groupedOptions = options groupBy {
+      case _: SocketOption  ⇒ "socket-options"
+      case _: ConnectOption ⇒ "connect-options"
+      case _: PubSubOption  ⇒ "pubsub-options"
+    }
+
+    groupedOptions.get("socket-options") map { options ⇒
+      options foreach { option ⇒
+        socket.setSocketOption(option.asInstanceOf[SocketOption])
+      }
+    }
+
+    groupedOptions.get("connect-options") map { options ⇒
+      options foreach { option ⇒
+        handleConnectOption(socket, option.asInstanceOf[ConnectOption])
+      }
+    }
+
+    groupedOptions.get("pubsub-options") map { options ⇒
+      options foreach { option ⇒
+        handlePubSubOption(socket, option.asInstanceOf[PubSubOption])
+      }
+    }
+
+    socket
+  }
+
   @tailrec private def readInterrupts: Unit =
-    interrupter.recv(ZMQ.NOBLOCK) match {
+    interruptListener.recv(ZMQ.NOBLOCK) match {
       case null ⇒
       case _    ⇒ readInterrupts
     }
