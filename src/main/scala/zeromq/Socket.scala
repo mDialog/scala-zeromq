@@ -62,7 +62,7 @@ private[zeromq] abstract class Socket(val socket: ZMQ.Socket, val poller: ZMQ.Po
 
   def isWriteable: Boolean = canSend && poller.pollout(pollIndex)
 
-  def receive(messages: IndexedSeq[Message] = Vector.empty): IndexedSeq[Message]
+  def receive(): IndexedSeq[Message]
   def send(): Unit
 
   def connect(endpoint: String) = socket.connect(endpoint)
@@ -189,11 +189,14 @@ private[zeromq] trait Readable { self: Socket ⇒
         }
     }
 
-  def receive(messages: IndexedSeq[Message] = Vector.empty): IndexedSeq[Message] =
+  @tailrec final protected def receiveAll(messages: IndexedSeq[Message] = Vector.empty): IndexedSeq[Message] =
     receiveMessage() match {
       case None          ⇒ messages
-      case Some(message) ⇒ receive(messages :+ message)
+      case Some(message) ⇒ receiveAll(messages :+ message)
     }
+
+  def receive: IndexedSeq[Message] = receiveAll()
+
 }
 
 private[zeromq] class AlternatingSocket(socket: ZMQ.Socket, poller: ZMQ.Poller, var state: SocketState)
@@ -210,7 +213,7 @@ private[zeromq] class AlternatingSocket(socket: ZMQ.Socket, poller: ZMQ.Poller, 
     case Receive ⇒ super.isReadable
   }
 
-  override def receive(messages: IndexedSeq[Message] = Vector.empty) = state match {
+  override def receive() = state match {
     case Send ⇒ throw new UnsupportedOperationException()
     case Receive ⇒
       receiveMessage() match {
@@ -219,7 +222,7 @@ private[zeromq] class AlternatingSocket(socket: ZMQ.Socket, poller: ZMQ.Poller, 
           state = Send
           option.toIndexedSeq
 
-        case None ⇒ messages
+        case None ⇒ IndexedSeq.empty[Message]
       }
   }
 
@@ -256,7 +259,7 @@ private[zeromq] trait SendOnly extends Writeable {
 
   override def isReadable = false
 
-  def receive(messages: IndexedSeq[Message] = Vector.empty) = throw new UnsupportedOperationException()
+  def receive() = throw new UnsupportedOperationException()
 }
 
 private[zeromq] trait ReceiveOnly extends Readable {
