@@ -23,8 +23,8 @@ class ZeroMQExtension(val system: ActorSystem) extends Extension {
   val pollInterrupter = system.actorOf(PollInterrupter(zmqContext).withDispatcher("zeromq.poll-interrupter-dispatcher"), "zeromq-poll-interrupter")
   val socketManager = system.actorOf(SocketManager(zmqContext, pollInterrupter).withDispatcher("zeromq.socket-manager-dispatcher"), "zeromq-socket-manager")
 
-  def newSocket(socketType: SocketType, socketParams: Param*): ActorRef = {
-    val newSocketFuture = socketManager ? NewSocket(socketType, socketParams)
+  def newSocket(socketType: SocketType, socketParams: Param*)(implicit context: ActorContext = null): ActorRef = {
+    val newSocketFuture = socketManager ? NewSocket(socketType, socketParams, context)
 
     pollInterrupter ! Interrupt
 

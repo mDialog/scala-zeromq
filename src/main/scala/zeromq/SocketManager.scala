@@ -2,12 +2,12 @@ package zeromq
 
 import annotation.tailrec
 import org.zeromq.{ ZMQ, ZMQException }
-import akka.actor.{ Actor, ActorRef, Props, Status, Terminated }
+import akka.actor.{ Actor, ActorContext, ActorRef, Props, Status, Terminated }
 import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-private[zeromq] case class NewSocket(socketType: SocketType, options: Seq[Param])
+private[zeromq] case class NewSocket(socketType: SocketType, options: Seq[Param], context: ActorContext = null)
 private[zeromq] case object Poll
 
 case object Closed
@@ -65,14 +65,16 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
 
       self ! Poll
 
-    case NewSocket(socketType, options) ⇒
+    case NewSocket(socketType, options, parentContext) ⇒
       try {
         val socketParams = options.collect({ case p: SocketParam ⇒ p })
         val socket = newSocket(socketType, socketParams)
 
         val listener = options.collect({ case Listener(l) ⇒ l }).headOption
-        val handler = context.actorOf(SocketHandler(self, interrupter, listener), "socket-handler-" + socketCount.getAndIncrement())
 
+        val handler = Option(parentContext).getOrElse(context).actorOf(SocketHandler(self, interrupter, listener), "socket-handler-" + socketCount.getAndIncrement())
+
+        context.watch(handler)
         sockets(handler) = socket
 
         sender ! handler
