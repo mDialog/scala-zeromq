@@ -5,7 +5,7 @@ import org.zeromq.ZMQException
 import akka.util.ByteString
 import scala.concurrent.{ Await, Future, ExecutionContext }
 import scala.concurrent.duration._
-import java.util.concurrent.Executors
+import java.util.concurrent.TimeoutException
 
 class SocketRefSpec extends FunSpec {
 
@@ -81,20 +81,40 @@ class SocketRefSpec extends FunSpec {
   }
 
   describe("recv") {
-    it("should block indefinitely until a message is received") {
+
+    def socketPair(address: String) = {
       val push = ZeroMQ.socket(SocketType.Push)
-      push.bind("inproc://test-receive-message")
+      push.bind(address)
 
       val pull = ZeroMQ.socket(SocketType.Pull)
-      pull.connect("inproc://test-receive-message")
+      pull.connect(address)
 
-      val executionContext = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
-      val recvFuture = Future(pull.recv)(executionContext)
+      (push, pull)
+    }
+
+    it("should return future resulting in received message") {
+      val (push, pull) = socketPair("inproc://test-receive-message")
+
+      val recvFuture = pull.recv()
 
       val message = Message(ByteString("test-receive-message"))
       push.send(message)
 
       assert(Await.result(recvFuture, 50.millis) === message)
+    }
+
+    it("should not lose messager when future times out") {
+      val (push, pull) = socketPair("inproc://test-receive-timeout")
+
+      val recvTimeout = pull.recv(20.millis)
+      intercept[TimeoutException] { Await.result(recvTimeout, 500.millis) }
+
+      val message = Message(ByteString("test-receive-timeout"))
+      push.send(message)
+
+      val recv = pull.recv()
+
+      assert(Await.result(recv, 100.millis) === message)
     }
   }
 

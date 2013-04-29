@@ -36,11 +36,15 @@ Then, bind one to a socket address and connect the other:
 
 ZeroMQ supports several message transport protocols.
 
-Next, send and receive a couple ofi message:
+Next, send and receive a couple of messages:
 
     pushSocket.send(Message(ByteString("one"), ByteString("two")))
-    pullSocket.recv // blocks indefinitely awaiting message
-    // zeromq.Message = Message(ByteString("one"), ByteString("two"))
+    val messageFuture = pullSocket.recv() // returns Future, default timeout 1s
+    Await.result(messageFuture, 1000.milliseconds)
+    // message: zeromq.Message = Message(ByteString("one"), ByteString("two")))
+
+The `recv` method returns a Future containing a message if one arrives before
+the timeout is reached.
 
     pushSocket.send(Message(ByteString("three"), ByteString("four")))
     pullSocket.recvOption // returns immediately with message, if one is waiting
@@ -57,12 +61,11 @@ If you'd like to stop receiving messages on a socket, close it.
 Once closed a socket it can no longer be used. If you need to send or receive
 messages again you must create a new socket.
 
-## Using with Akka
+### Using with Akka
 
 scala-zeromq is implemented as an 
 [Akka Extension](http://doc.akka.io/docs/akka/snapshot/scala/extending-akka.html). 
-To use it with Akka, load the extension either manually or automatically through
-application configuration. 
+To use it's fully asynchronous Akka interface, just load the extension. 
 
 Use the extension to request a new socket. Assign an ActorRef as listener if you
 expect the socket to receive messages.

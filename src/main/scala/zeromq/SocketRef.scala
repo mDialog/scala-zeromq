@@ -1,30 +1,43 @@
 package zeromq
 
 import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._
 import akka.actor.{ Actor, ActorRef, Props, Status, PoisonPill }
 import akka.pattern.ask
 import akka.util.{ ByteString, Timeout }
+import java.util.concurrent.TimeoutException
 
-private case object AwaitMessage
 private case object FetchMessage
+private case class AwaitMessage(timeout: FiniteDuration)
+private case class RecvTimeout(receiver: ActorRef)
 
 private class SocketListener extends Actor {
+  import context.dispatcher
+  //import scala.concurrent.ExecutionContext.Implicits.global
+
   private val messageQueue = collection.mutable.Queue.empty[Message]
-  private val receiverQueue = collection.mutable.Queue.empty[ActorRef]
+  private val waitingRecvs = collection.mutable.Set.empty[ActorRef]
 
   def receive = {
     case message: Message ⇒
-      if (receiverQueue.nonEmpty)
-        receiverQueue.dequeue ! message
-      else
-        messageQueue.enqueue(message)
+      waitingRecvs.headOption match {
+        case Some(next) ⇒
+          waitingRecvs.remove(next)
+          next ! message
+        case None ⇒ messageQueue.enqueue(message)
+      }
 
-    case AwaitMessage ⇒
+    case AwaitMessage(timeout) ⇒
       if (messageQueue.nonEmpty)
         sender ! messageQueue.dequeue
-      else
-        receiverQueue.enqueue(sender)
+      else {
+        waitingRecvs.add(sender)
+        context.system.scheduler.scheduleOnce(timeout, self, RecvTimeout(sender))
+      }
+
+    case RecvTimeout(receiver) ⇒
+      if (waitingRecvs.remove(receiver))
+        receiver ! Status.Failure(new TimeoutException())
 
     case FetchMessage ⇒ sender ! messageQueue.dequeueFirst(_ ⇒ true)
   }
@@ -62,8 +75,8 @@ case class SocketRef(socketType: SocketType)(implicit extension: ZeroMQExtension
 
   def send(message: Message) = socket ! message
 
-  def recv: Message =
-    Await.result((listener ? AwaitMessage).mapTo[Message], Duration.Inf)
+  def recv(timeoutDuration: FiniteDuration = 1000.millis): Future[Message] =
+    (listener ? AwaitMessage(timeoutDuration))(Timeout(timeoutDuration * 2)).mapTo[Message]
 
   def recvOption: Option[Message] =
     Await.result((listener ? FetchMessage).mapTo[Option[Message]], timeout.duration)
