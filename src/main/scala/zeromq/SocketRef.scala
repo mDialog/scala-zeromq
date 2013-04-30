@@ -13,7 +13,6 @@ private case class RecvTimeout(receiver: ActorRef)
 
 private class SocketListener extends Actor {
   import context.dispatcher
-  //import scala.concurrent.ExecutionContext.Implicits.global
 
   private val messageQueue = collection.mutable.Queue.empty[Message]
   private val waitingRecvs = collection.mutable.Set.empty[ActorRef]

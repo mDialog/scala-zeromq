@@ -103,7 +103,7 @@ class SocketRefSpec extends FunSpec {
       assert(Await.result(recvFuture, 50.millis) === message)
     }
 
-    it("should not lose messager when future times out") {
+    it("should not lose message when future times out") {
       val (push, pull) = socketPair("inproc://test-receive-timeout")
 
       val recvTimeout = pull.recv(20.millis)

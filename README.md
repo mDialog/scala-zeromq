@@ -1,11 +1,11 @@
-# scala-zeromq
+ed# scala-zeromq
 
 **Requires libzmq (v2.1.0 or greater) and either 
 [JZMQ](https://github.com/zeromq/jzmq) or 
 [zeromq-scala-binding](https://github.com/valotrading/zeromq-scala-binding)**
 
 scala-zeromq facilitates communication use the [ZeroMQ](http://zeromq.org) 
-messaging library. ZeroMQ is a message-orient socket communication library that
+messaging library. ZeroMQ is a message-oriented socket communication library that
 support several high-level messaging patterns, including request-reply, 
 publish-subscribe and push-pull. For a thorough description of how ZeroMQ works, 
 read the [guide](http://zguide.zeromq.org). 
