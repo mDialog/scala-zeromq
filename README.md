@@ -1,4 +1,4 @@
-ed# scala-zeromq
+# scala-zeromq
 
 **Requires libzmq (v2.1.0 or greater) and either 
 [JZMQ](https://github.com/zeromq/jzmq) or 
