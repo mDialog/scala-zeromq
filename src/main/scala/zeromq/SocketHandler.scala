@@ -8,7 +8,7 @@ import akka.util.{ ByteString, Timeout }
 
 private[zeromq] object SocketHandler {
   def apply(socketManager: ActorRef, pollInterrupter: ActorRef, listener: Option[ActorRef]): Props =
-    Props(classOf[SocketHandler], socketManager, pollInterrupter, listener)
+    Props(new SocketHandler(socketManager, pollInterrupter, listener))
 }
 
 private[zeromq] class SocketHandler(manager: ActorRef, pollInterrupter: ActorRef, var listener: Option[ActorRef]) extends Actor {

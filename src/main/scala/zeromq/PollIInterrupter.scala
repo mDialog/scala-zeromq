@@ -9,7 +9,7 @@ private[zeromq] case class ConnectToManager(address: String)
 
 private[zeromq] object PollInterrupter {
   def apply(zmqContext: ZMQ.Context): Props =
-    Props(classOf[PollInterrupter], zmqContext)
+    Props(new PollInterrupter(zmqContext))
 }
 
 private[zeromq] class PollInterrupter(zmqContext: ZMQ.Context) extends Actor {

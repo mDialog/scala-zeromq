@@ -14,7 +14,7 @@ case object Closed
 
 private[zeromq] object SocketManager {
   def apply(zmqContext: ZMQ.Context, interrupter: ActorRef): Props =
-    Props(classOf[SocketManager], zmqContext, interrupter)
+    Props(new SocketManager(zmqContext, interrupter))
 }
 
 private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorRef) extends Actor {

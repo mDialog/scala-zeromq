@@ -23,7 +23,7 @@ In your build.sbt
 
     resolvers += "mDialog snapshots" at "http://mdialog.github.io/snapshots/"
 
-    libraryDependencies += "com.mdialog" %% "scala-zeromq" % "0.2.0-SNAPSHOT"
+    libraryDependencies += "com.mdialog" %% "scala-zeromq" % "0.1.0-SNAPSHOT"
 
 To get started with a quick example, create a few sockets:
 
