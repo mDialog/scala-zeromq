@@ -14,4 +14,6 @@ class Message(parts: ByteString*) extends IndexedSeq[ByteString] {
 
 object Message {
   def apply(parts: ByteString*) = new Message(parts: _*)
+
+  def unapplySeq(message: Message) = IndexedSeq.unapplySeq(message)
 }
