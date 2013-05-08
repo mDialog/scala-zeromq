@@ -1,10 +1,6 @@
 # scala-zeromq
 
-**Requires libzmq (v2.1.0 or greater) and either 
-[JZMQ](https://github.com/zeromq/jzmq) or 
-[zeromq-scala-binding](https://github.com/valotrading/zeromq-scala-binding)**
-
-scala-zeromq facilitates communication use the [ZeroMQ](http://zeromq.org) 
+scala-zeromq facilitates communication using the [ZeroMQ](http://zeromq.org) 
 messaging library. ZeroMQ is a message-oriented socket communication library that
 support several high-level messaging patterns, including request-reply, 
 publish-subscribe and push-pull. For a thorough description of how ZeroMQ works, 
@@ -15,6 +11,11 @@ ZeroMQ socket interface. All socket communications are conducted using an
 immutable handle called a SocketRef. Under the hood, scala-zeromq uses
 [Akka](http://akka.io) to ensure all socket interactions are handled safely and
 efficiently.
+
+**Requires libzmq (v2.1.0 or greater) and either 
+[JZMQ](https://github.com/zeromq/jzmq) or 
+[zeromq-scala-binding](https://github.com/valotrading/zeromq-scala-binding)**, 
+neither is included automatically.
 
 ## Using
 
@@ -36,22 +37,38 @@ Then, bind one to a socket address and connect the other:
 
 ZeroMQ supports several message transport protocols.
 
-Next, send and receive a couple of messages:
+Next, send and receive a couple of messages. The `recv` method returns a Future 
+containing a message if one arrives before the timeout is reached.
 
     pushSocket.send(Message(ByteString("one"), ByteString("two")))
-    val messageFuture = pullSocket.recv() // returns Future, default timeout 1s
-    Await.result(messageFuture, 1000.milliseconds)
+
+    val message = pullSocket.recv() // returns Future, default timeout 1s
+    Await.result(message, 1000.milliseconds)
     // message: zeromq.Message = Message(ByteString("one"), ByteString("two")))
 
-The `recv` method returns a Future containing a message if one arrives before
-the timeout is reached.
-
     pushSocket.send(Message(ByteString("three"), ByteString("four")))
-    pullSocket.recvOption // returns immediately with message, if one is waiting
-    // Option[zeromq.Message] = Some(Message(ByteString("three"), ByteString("four")))
 
-A scala-zeromq Message is an collection of Akka
-[ByteString](http://doc.akka.io/api/akka/snapshot/#akka.util.ByteString) 
+    pullSocket.recv(10.seconds) map (println(_)) // returns Future, timeout 10s
+    // Message(ByteString("three"), ByteString("four")))
+
+The `recvAll` method assigns a function to be called each time a message is 
+received by the socket.
+
+    pullSocket.recvAll { message: Message =>
+      println("received: " + message.map(_.utf8String).mkString(" "))
+    }
+    pushSocket.send(Message(ByteString("five"), ByteString("six")))
+    // received: five six
+
+The `recvOption` method returns immediately with an option containing a message
+if one is waiting to be received.
+
+    pushSocket.send(Message(ByteString("seven"), ByteString("eight")))
+    pullSocket.recvOption // returns immediately with message, if one is waiting
+    // Option[zeromq.Message] = Some(Message(ByteString("seven"), ByteString("eight")))
+
+A scala-zeromq Message is an collection of
+[akka.util.ByteString](http://doc.akka.io/api/akka/snapshot/#akka.util.ByteString) 
 objects. Each item in the collection contains one ZeroMQ message part.
 
 If you'd like to stop receiving messages on a socket, close it.

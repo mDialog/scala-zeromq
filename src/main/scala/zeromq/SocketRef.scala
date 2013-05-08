@@ -10,6 +10,7 @@ import java.util.concurrent.TimeoutException
 private case object FetchMessage
 private case class AwaitMessage(timeout: FiniteDuration)
 private case class RecvTimeout(receiver: ActorRef)
+private case class SetResponder(responder: Message ⇒ Unit)
 
 private class SocketListener extends Actor {
   import context.dispatcher
@@ -17,14 +18,23 @@ private class SocketListener extends Actor {
   private val messageQueue = collection.mutable.Queue.empty[Message]
   private val waitingRecvs = collection.mutable.Set.empty[ActorRef]
 
+  private var responder: Option[Message ⇒ Unit] = None
+
   def receive = {
     case message: Message ⇒
       waitingRecvs.headOption match {
         case Some(next) ⇒
           waitingRecvs.remove(next)
           next ! message
-        case None ⇒ messageQueue.enqueue(message)
+        case None ⇒
+          responder match {
+            case Some(responderFunction) ⇒ responderFunction(message)
+            case None                    ⇒ messageQueue.enqueue(message)
+          }
       }
+
+    case SetResponder(responderFunction) ⇒
+      responder = Some(responderFunction)
 
     case AwaitMessage(timeout) ⇒
       if (messageQueue.nonEmpty)
@@ -76,6 +86,9 @@ case class SocketRef(socketType: SocketType)(implicit extension: ZeroMQExtension
 
   def recv(timeoutDuration: FiniteDuration = 1000.millis): Future[Message] =
     (listener ? AwaitMessage(timeoutDuration))(Timeout(timeoutDuration * 2)).mapTo[Message]
+
+  def recvAll(responder: Message ⇒ Unit): Unit =
+    listener ! SetResponder(responder)
 
   def recvOption: Option[Message] =
     Await.result((listener ? FetchMessage).mapTo[Option[Message]], timeout.duration)
