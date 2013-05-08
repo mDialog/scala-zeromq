@@ -21,9 +21,9 @@ neither is included automatically.
 
 In your build.sbt
 
-    resolvers += "mDialog snapshots" at "http://mdialog.github.io/snapshots/"
+    resolvers += "mDialog releases" at "http://mdialog.github.io/releases/"
 
-    libraryDependencies += "com.mdialog" %% "scala-zeromq" % "0.2.0-SNAPSHOT"
+    libraryDependencies += "com.mdialog" %% "scala-zeromq" % "0.0.0"
 
 To get started with a quick example, create a few sockets:
 
