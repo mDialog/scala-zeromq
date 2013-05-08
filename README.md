@@ -21,9 +21,9 @@ neither is included automatically.
 
 In your build.sbt
 
-    resolvers += "mDialog snapshots" at "http://mdialog.github.io/snapshots/"
+    resolvers += "mDialog releases" at "http://mdialog.github.io/releases/"
 
-    libraryDependencies += "com.mdialog" %% "scala-zeromq" % "0.1.0-SNAPSHOT"
+    libraryDependencies += "com.mdialog" %% "scala-zeromq" % "0.1.0"
 
 To get started with a quick example, create a few sockets:
 
@@ -115,7 +115,7 @@ Close the socket by sending a PoisonPill to the socket actor.
 
 ## Documentation
 
-Read the API documentation here: [http://mdialog.github.io/api/scala-zeromq-0.2.0/](http://mdialog.github.io/api/scala-zeromq-0.2.0/)
+Read the API documentation here: [http://mdialog.github.io/api/scala-zeromq-0.1.0/](http://mdialog.github.io/api/scala-zeromq-0.1.0/)
 
 ## License
 
