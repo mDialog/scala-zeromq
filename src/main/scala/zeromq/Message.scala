@@ -1,15 +1,18 @@
 package zeromq
 
 import akka.util.ByteString
+import scala.collection.IndexedSeqLike
+import scala.collection.mutable.{ArrayBuffer, Builder}
 
-class Message(parts: ByteString*) extends IndexedSeq[ByteString] {
-  private val vector = Vector(parts: _*)
+class Message(parts: ByteString*) extends IndexedSeq[ByteString] with IndexedSeqLike[ByteString, Message] {
+  private val underlying = parts.toIndexedSeq
 
-  def apply(idx: Int) = vector(idx)
+  override def apply(idx: Int) = underlying(idx)
 
-  def length = vector.length
+  override def length = underlying.length
 
-  override def tail = Message(vector.tail: _*)
+  override def newBuilder: Builder[ByteString, Message] = 
+    ArrayBuffer.empty[ByteString].mapResult(Message.apply)
 }
 
 object Message {
