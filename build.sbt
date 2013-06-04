@@ -11,10 +11,10 @@ parallelExecution := false
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-language:postfixOps")
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor" % "2.2-M3",
+  "com.typesafe.akka" %% "akka-actor" % "2.2.0-RC1",
 //  "org.zeromq" %% "zeromq-scala-binding" % "0.0.7",
   "org.scalatest" %% "scalatest" % "1.9.1" % "test",
-  "com.typesafe.akka" %% "akka-testkit" % "2.2-M3" % "test"
+  "com.typesafe.akka" %% "akka-testkit" % "2.2.0-RC1" % "test"
 )
 
 resolvers ++= Seq(

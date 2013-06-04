@@ -67,7 +67,7 @@ if one is waiting to be received.
     pullSocket.recvOption // returns immediately with message, if one is waiting
     // Option[zeromq.Message] = Some(Message(ByteString("seven"), ByteString("eight")))
 
-A scala-zeromq Message is an collection of
+A scala-zeromq Message is a collection of
 [akka.util.ByteString](http://doc.akka.io/api/akka/snapshot/#akka.util.ByteString) 
 objects. Each item in the collection contains one ZeroMQ message part.
 
