@@ -32,6 +32,5 @@ private[zeromq] class PollInterrupter(zmqContext: ZMQ.Context) extends Actor {
 
   override def postStop = {
     socket.close
-    zmqContext.term
   }
 }

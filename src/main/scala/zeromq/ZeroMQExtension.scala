@@ -17,6 +17,9 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
 class ZeroMQExtension(val system: ActorSystem) extends Extension {
 
   private val zmqContext = ZMQ.context(1)
+  system.registerOnTermination {
+    zmqContext.term
+  }
 
   implicit val newSocketTimeout = Timeout(Duration(system.settings.config.getMilliseconds("zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
 

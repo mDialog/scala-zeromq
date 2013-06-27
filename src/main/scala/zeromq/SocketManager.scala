@@ -109,8 +109,8 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
   }
 
   override def postStop = {
+    sockets.values.map(_.close)
     interruptListener.close
-    zmqContext.term
   }
 
   private def newSocket(socketType: SocketType, options: Seq[SocketParam]) = {
