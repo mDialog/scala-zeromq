@@ -2,9 +2,9 @@ name := "scala-zeromq"
 
 organization := "com.mdialog"
 
-version := "0.2.3-SNAPSHOT"
+version := "0.2.3"
 
-scalaVersion := "2.10.1"
+scalaVersion := "2.10.2"
 
 parallelExecution := false
 
