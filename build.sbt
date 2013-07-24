@@ -2,7 +2,7 @@ name := "scala-zeromq"
 
 organization := "com.mdialog"
 
-version := "0.2.2-SNAPSHOT"
+version := "0.2.2"
 
 scalaVersion := "2.10.1"
 
