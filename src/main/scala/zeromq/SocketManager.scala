@@ -114,35 +114,43 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
   }
 
   private def newSocket(socketType: SocketType, options: Seq[SocketParam]) = {
-    val socket = Socket(zmqContext, poller, socketType)
 
-    // Perform intialization in order: socket options, connection options,
-    // then pubsub options.
-    val groupedOptions = options groupBy {
-      case _: SocketOption  ⇒ "socket-options"
-      case _: ConnectOption ⇒ "connect-options"
-      case _: PubSubOption  ⇒ "pubsub-options"
-    }
+    var socket: Socket = null
 
-    groupedOptions.get("socket-options") map { options ⇒
-      options foreach { option ⇒
-        socket.setSocketOption(option.asInstanceOf[SocketOption])
+    try {
+
+      socket = Socket(zmqContext, poller, socketType)
+      // Perform intialization in order: socket options, connection options,
+      // then pubsub options.
+      val groupedOptions = options groupBy {
+        case _: SocketOption  ⇒ "socket-options"
+        case _: ConnectOption ⇒ "connect-options"
+        case _: PubSubOption  ⇒ "pubsub-options"
       }
-    }
 
-    groupedOptions.get("connect-options") map { options ⇒
-      options foreach { option ⇒
-        handleConnectOption(socket, option.asInstanceOf[ConnectOption])
+      groupedOptions.get("socket-options") map { options ⇒
+        options foreach { option ⇒
+          socket.setSocketOption(option.asInstanceOf[SocketOption])
+        }
       }
-    }
 
-    groupedOptions.get("pubsub-options") map { options ⇒
-      options foreach { option ⇒
-        handlePubSubOption(socket, option.asInstanceOf[PubSubOption])
+      groupedOptions.get("connect-options") map { options ⇒
+        options foreach { option ⇒
+          handleConnectOption(socket, option.asInstanceOf[ConnectOption])
+        }
       }
-    }
 
-    socket
+      groupedOptions.get("pubsub-options") map { options ⇒
+        options foreach { option ⇒
+          handlePubSubOption(socket, option.asInstanceOf[PubSubOption])
+        }
+      }
+      socket
+    } catch {
+      case e: ZMQException ⇒
+        socket.close
+        throw e
+    }
   }
 
   @tailrec private def readInterrupts: Unit =
