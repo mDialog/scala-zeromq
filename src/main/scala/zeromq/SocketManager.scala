@@ -66,20 +66,21 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
       self ! Poll
 
     case NewSocket(socketType, options, parentContext) ⇒
-      try {
-        val socketParams = options.collect({ case p: SocketParam ⇒ p })
-        val socket = newSocket(socketType, socketParams)
 
-        val listener = options.collect({ case Listener(l) ⇒ l }).headOption
+      val socketParams = options.collect({ case p: SocketParam ⇒ p })
+      newSocket(socketType, socketParams) match {
+        case Right(socket) ⇒
 
-        val handler = Option(parentContext).getOrElse(context).actorOf(SocketHandler(self, interrupter, listener), "socket-handler-" + socketCount.getAndIncrement())
+          val listener = options.collect({ case Listener(l) ⇒ l }).headOption
+          val handler = Option(parentContext).getOrElse(context).actorOf(SocketHandler(self, interrupter, listener), "socket-handler-" + socketCount.getAndIncrement())
 
-        context.watch(handler)
-        sockets(handler) = socket
+          context.watch(handler)
+          sockets(handler) = socket
 
-        sender ! handler
-      } catch {
-        case e: ZMQException ⇒ sender ! Failure(e)
+          sender ! handler
+
+        case Left(exception) ⇒
+          sender ! Failure(exception)
       }
 
     case Terminated(handler) ⇒
@@ -113,7 +114,7 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
     interruptListener.close
   }
 
-  private def newSocket(socketType: SocketType, options: Seq[SocketParam]) = {
+  private def newSocket(socketType: SocketType, options: Seq[SocketParam]): Either[Exception, Socket] = {
 
     var socket: Socket = null
 
@@ -145,11 +146,11 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
           handlePubSubOption(socket, option.asInstanceOf[PubSubOption])
         }
       }
-      socket
+      Right(socket)
     } catch {
       case e: ZMQException ⇒
         socket.close
-        throw e
+        Left(e)
     }
   }
 
