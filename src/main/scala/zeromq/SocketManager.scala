@@ -2,8 +2,9 @@ package zeromq
 
 import annotation.tailrec
 import org.zeromq.{ ZMQ, ZMQException }
-import akka.actor.{ Actor, ActorContext, ActorRef, Props, Status, Terminated }
+import akka.actor.{ Actor, ActorContext, ActorRef, Props, Terminated, Status }
 import scala.concurrent.duration._
+import scala.util.{ Try, Success, Failure }
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -18,7 +19,6 @@ private[zeromq] object SocketManager {
 }
 
 private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorRef) extends Actor {
-  import Status._
 
   private val config = context.system.settings.config
   private val poller: ZMQ.Poller = zmqContext.poller
@@ -69,7 +69,7 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
 
       val socketParams = options.collect({ case p: SocketParam ⇒ p })
       newSocket(socketType, socketParams) match {
-        case Right(socket) ⇒
+        case Success(socket) ⇒
 
           val listener = options.collect({ case Listener(l) ⇒ l }).headOption
           val handler = Option(parentContext).getOrElse(context).actorOf(SocketHandler(self, interrupter, listener), "socket-handler-" + socketCount.getAndIncrement())
@@ -79,8 +79,8 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
 
           sender ! handler
 
-        case Left(exception) ⇒
-          sender ! Failure(exception)
+        case Failure(exception) ⇒
+          sender ! Status.Failure(exception)
       }
 
     case Terminated(handler) ⇒
@@ -98,14 +98,14 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
         }
         sender ! Success(handler)
       } catch {
-        case e: ZMQException ⇒ sender ! Failure(e)
+        case e: ZMQException ⇒ sender ! Status.Failure(e)
       }
 
     case (handler: ActorRef, query: SocketOptionQuery) ⇒
       try {
         sockets.get(handler) map (_.getSocketOption(query)) map (sender ! _)
       } catch {
-        case e: ZMQException ⇒ sender ! Failure(e)
+        case e: ZMQException ⇒ sender ! Status.Failure(e)
       }
   }
 
@@ -114,7 +114,7 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
     interruptListener.close
   }
 
-  private def newSocket(socketType: SocketType, options: Seq[SocketParam]): Either[Exception, Socket] = {
+  private def newSocket(socketType: SocketType, options: Seq[SocketParam]): Try[Socket] = {
 
     var socket: Socket = null
 
@@ -146,11 +146,11 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
           handlePubSubOption(socket, option.asInstanceOf[PubSubOption])
         }
       }
-      Right(socket)
+      Success(socket)
     } catch {
       case e: ZMQException ⇒
         socket.close
-        Left(e)
+        Failure(e)
     }
   }
 
