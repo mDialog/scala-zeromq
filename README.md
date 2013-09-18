@@ -23,7 +23,7 @@ In your build.sbt
 
     resolvers += "mDialog releases" at "http://mdialog.github.io/releases/"
 
-    libraryDependencies += "com.mdialog" %% "scala-zeromq" % "0.2.3"
+    libraryDependencies += "com.mdialog" %% "scala-zeromq" % "0.2.4"
 
 To get started with a quick example, create a few sockets:
 
@@ -120,7 +120,7 @@ Close the socket by sending a PoisonPill to the socket actor.
 
 ## Documentation
 
-Read the API documentation here: [http://mdialog.github.io/api/scala-zeromq-0.2.3/](http://mdialog.github.io/api/scala-zeromq-0.2.3/)
+Read the API documentation here: [http://mdialog.github.io/api/scala-zeromq-0.2.4/](http://mdialog.github.io/api/scala-zeromq-0.2.4/)
 
 ## License
 
