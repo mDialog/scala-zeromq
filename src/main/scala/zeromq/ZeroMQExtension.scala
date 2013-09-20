@@ -9,8 +9,7 @@ import scala.concurrent.Await
 import org.zeromq.ZMQ
 
 object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProvider {
-  override def get(system: ActorSystem): ZeroMQExtension = super.get(system)
-  def lookup(): this.type = this
+  def lookup() = ZeroMQExtension
   override def createExtension(system: ExtendedActorSystem): ZeroMQExtension = new ZeroMQExtension(system)
 }
 
@@ -21,13 +20,21 @@ class ZeroMQExtension(val system: ActorSystem) extends Extension {
     zmqContext.term
   }
 
-  implicit val newSocketTimeout = Timeout(Duration(system.settings.config.getMilliseconds("zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
+  private implicit val newSocketTimeout = Timeout(Duration(system.settings.config.getMilliseconds("zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
 
-  val pollInterrupter = system.actorOf(PollInterrupter(zmqContext).withDispatcher("zeromq.poll-interrupter-dispatcher"), "zeromq-poll-interrupter")
-  val socketManager = system.actorOf(SocketManager(zmqContext, pollInterrupter).withDispatcher("zeromq.socket-manager-dispatcher"), "zeromq-socket-manager")
+  private val poller: ZMQ.Poller = zmqContext.poller
 
-  Await.result((socketManager ? SetupInterrupt), newSocketTimeout.duration)
-  Await.result((pollInterrupter ? ConnectToManager), newSocketTimeout.duration)
+  private val interruptAddress = system.settings.config.getString("zeromq.poll-interrupt-socket")
+  private val interruptSub: ZMQ.Socket = zmqContext.socket(ZMQ.SUB)
+  private val interruptPub = zmqContext.socket(ZMQ.PUB)
+
+  interruptSub.bind(interruptAddress)
+  interruptSub.subscribe(Array.empty[Byte])
+  interruptPub.connect(interruptAddress)
+
+  private val pollIndex: Int = poller.register(interruptSub, ZMQ.Poller.POLLIN)
+  private val pollInterrupter = system.actorOf(PollInterrupter(interruptPub).withDispatcher("zeromq.poll-interrupter-dispatcher"), "zeromq-poll-interrupter")
+  private val socketManager = system.actorOf(SocketManager(zmqContext, poller, interruptSub, pollIndex, pollInterrupter).withDispatcher("zeromq.socket-manager-dispatcher"), "zeromq-socket-manager")
 
   def newSocket(socketType: SocketType, socketParams: Param*)(implicit context: ActorContext = null): ActorRef = {
     val newSocketFuture = socketManager ? NewSocket(socketType, socketParams, context)
