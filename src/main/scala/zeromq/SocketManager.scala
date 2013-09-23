@@ -12,22 +12,27 @@ private[zeromq] case class NewSocket(socketType: SocketType, options: Seq[Param]
 private[zeromq] case object Poll
 
 case object Closed
-case object SetupInterrupt
 
 private[zeromq] object SocketManager {
-  def apply(zmqContext: ZMQ.Context, interrupter: ActorRef): Props =
-    Props(classOf[SocketManager], zmqContext, interrupter)
+  def apply(
+    zmqContext: ZMQ.Context,
+    poller: ZMQ.Poller,
+    interruptSub: ZMQ.Socket,
+    pollIndex: Int,
+    pollInterrupter: ActorRef): Props =
+    Props(classOf[SocketManager], zmqContext, poller, interruptSub, pollIndex, pollInterrupter)
 }
 
-private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorRef) extends Actor {
+private[zeromq] class SocketManager(
+    zmqContext: ZMQ.Context,
+    poller: ZMQ.Poller,
+    interruptSub: ZMQ.Socket,
+    pollIndex: Int,
+    pollInterrupter: ActorRef) extends Actor {
 
   private val config = context.system.settings.config
-  private val poller: ZMQ.Poller = zmqContext.poller
   private val socketCount = new AtomicInteger()
   private val sockets = collection.mutable.Map.empty[ActorRef, Socket]
-
-  var interruptListener: ZMQ.Socket = null
-  var interruptListenerPollIndex: Int = 0
 
   private val pollTimeoutSetting = config.getMilliseconds("zeromq.poll-timeout")
 
@@ -49,14 +54,6 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
           socket.queueForSend(message)
       }
 
-    case SetupInterrupt ⇒
-      interruptListener = zmqContext.socket(ZMQ.SUB)
-      interruptListenerPollIndex = poller.register(interruptListener, ZMQ.Poller.POLLIN)
-
-      interruptListener.bind(config.getString("zeromq.poll-interrupt-socket"))
-      interruptListener.subscribe(Array.empty[Byte])
-      sender ! "Ok"
-
     case Poll ⇒
       if (poller.poll(pollTimeout) > 0) {
         sockets foreach { socketPair ⇒
@@ -66,7 +63,7 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
           if (socket.isWriteable) socket.send()
         }
 
-        if (poller.pollin(interruptListenerPollIndex)) readInterrupts
+        if (poller.pollin(pollIndex)) readInterrupts
       }
 
       self ! Poll
@@ -78,7 +75,7 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
         case Success(socket) ⇒
 
           val listener = options.collect({ case Listener(l) ⇒ l }).headOption
-          val handler = Option(parentContext).getOrElse(context).actorOf(SocketHandler(self, interrupter, listener), "socket-handler-" + socketCount.getAndIncrement())
+          val handler = Option(parentContext).getOrElse(context).actorOf(SocketHandler(self, pollInterrupter, listener), "socket-handler-" + socketCount.getAndIncrement())
 
           context.watch(handler)
           sockets(handler) = socket
@@ -117,7 +114,7 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
 
   override def postStop = {
     sockets.values.map(_.close)
-    interruptListener.close
+    interruptSub.close
   }
 
   private def newSocket(socketType: SocketType, options: Seq[SocketParam]): Try[Socket] = {
@@ -161,7 +158,7 @@ private[zeromq] class SocketManager(zmqContext: ZMQ.Context, interrupter: ActorR
   }
 
   @tailrec private def readInterrupts: Unit =
-    interruptListener.recv(ZMQ.NOBLOCK) match {
+    interruptSub.recv(ZMQ.NOBLOCK) match {
       case null ⇒
       case _    ⇒ readInterrupts
     }
