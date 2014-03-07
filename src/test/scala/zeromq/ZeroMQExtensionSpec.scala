@@ -3,8 +3,7 @@ package zeromq
 
 import language.postfixOps
 
-import org.scalatest.matchers.MustMatchers
-import org.scalatest.FunSpec
+import org.scalatest.{ FunSpecLike, MustMatchers }
 import akka.testkit.{ TestProbe, TestKit }
 
 import scala.concurrent.duration._
@@ -14,7 +13,7 @@ import akka.actor.{ Actor, ActorSystem, ActorRef, Cancellable }
 // Much credit goes to akka-zeromq (https://github.com/akka/akka) for the 
 // contents of this file.
 
-class ZeroMQExtensionSpec extends TestKit(ActorSystem("ZeroMQExtensionSpec")) with FunSpec with MustMatchers {
+class ZeroMQExtensionSpec extends TestKit(ActorSystem("ZeroMQExtensionSpec")) with FunSpecLike with MustMatchers {
 
   implicit val timeout: Timeout = Timeout(2 seconds)
 

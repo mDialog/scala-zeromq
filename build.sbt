@@ -2,18 +2,18 @@ name := "scala-zeromq"
 
 organization := "com.mdialog"
 
-version := "0.2.5"
+version := "1.0.0"
 
-scalaVersion := "2.10.2"
+scalaVersion := "2.10.3"
 
 parallelExecution := false
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-language:postfixOps")
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor" % "2.2.1",
-  "org.scalatest" %% "scalatest" % "1.9.1" % "test",
-  "com.typesafe.akka" %% "akka-testkit" % "2.2.1" % "test"
+  "com.typesafe.akka" %% "akka-actor" % "2.3.0",
+  "org.scalatest" %% "scalatest" % "2.1.0" % "test",
+  "com.typesafe.akka" %% "akka-testkit" % "2.3.0" % "test"
 )
 
 resolvers ++= Seq(
