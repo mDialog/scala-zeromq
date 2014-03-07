@@ -84,8 +84,8 @@ scala-zeromq is implemented as an
 [Akka Extension](http://doc.akka.io/docs/akka/snapshot/scala/extending-akka.html). 
 To use it's fully asynchronous Akka interface, just load the extension. 
 
-This branch uses Akka 2.2, the latest pre-release version of Akka. If you're
-using Akka 2.1 see the [0.1.X](https://github.com/mDialog/scala-zeromq/tree/0.1.X)
+This branch uses Akka 2.3, the latest release version of Akka. If you're
+using Akka 2.2, please use version 0.2.5. If you're using Akka 2.1 see the [0.1.X](https://github.com/mDialog/scala-zeromq/tree/0.1.X)
 branch. If you're using Akka 2.0, see the [0.0.X](https://github.com/mDialog/scala-zeromq/tree/0.0.X) 
 branch.
 
