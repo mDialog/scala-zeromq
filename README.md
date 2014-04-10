@@ -1,7 +1,5 @@
 # scala-zeromq
 
-[![Build Status](https://travis-ci.org/mDialog/scala-zeromq.svg?branch=master)](https://travis-ci.org/mDialog/scala-zeromq)
-
 scala-zeromq facilitates communication using the [ZeroMQ](http://zeromq.org)
 messaging library. ZeroMQ is a message-oriented socket communication library that
 supports several high-level messaging patterns, including request-reply,
