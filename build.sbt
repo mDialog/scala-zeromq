@@ -22,7 +22,7 @@ resolvers ++= Seq(
 )
 
 publishTo <<= version { (v: String) =>
-  if (v.trim.endsWith("-SNAPSHOT")) 
+  if (v.trim.endsWith("-SNAPSHOT"))
     Some(Resolver.file("Snapshots", file("../mdialog.github.com/snapshots/")))
   else
     Some(Resolver.file("Releases", file("../mdialog.github.com/releases/")))
