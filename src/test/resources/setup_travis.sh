@@ -18,6 +18,6 @@ make
 sudo make install
 cd ../
 
-# Replace jar file
-rm -f lib/zmq.jar
+# Add jar file
+mkdir lib
 cp /usr/local/share/java/zmq.jar lib/
