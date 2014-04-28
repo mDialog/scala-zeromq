@@ -46,8 +46,7 @@ class SocketRefSpec extends FunSpec {
       val router = ZeroMQ.socket(SocketType.Router)
 
       intercept[ZMQException] {
-        // inproc address muct be bound before connect will succeed
-        router.connect("inproc://test-connect-to-unbornd-inprc-address")
+        router.connect("noproto://test-connect-using-undefined-proto")
       }
     }
   }

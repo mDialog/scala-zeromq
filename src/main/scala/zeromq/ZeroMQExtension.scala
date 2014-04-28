@@ -20,7 +20,9 @@ class ZeroMQExtension(val system: ActorSystem) extends Extension {
     zmqContext.term
   }
 
-  private implicit val newSocketTimeout = Timeout(Duration(system.settings.config.getMilliseconds("zeromq.new-socket-timeout"), TimeUnit.MILLISECONDS))
+  private implicit val newSocketTimeout = Timeout(system.settings.config.
+    getDuration("zeromq.new-socket-timeout", TimeUnit.MILLISECONDS),
+    TimeUnit.MILLISECONDS)
 
   private val poller: ZMQ.Poller = zmqContext.poller
 

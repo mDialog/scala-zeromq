@@ -55,7 +55,8 @@ private class SocketListener extends Actor {
 case class SocketRef(socketType: SocketType)(implicit extension: ZeroMQExtension) {
   import Status._
 
-  private implicit val timeout = Timeout(1000)
+  private implicit val timeout = Timeout(1000,
+    java.util.concurrent.TimeUnit.MILLISECONDS)
 
   private val listener = extension.system.actorOf(Props[SocketListener])
   private val socket = extension.newSocket(socketType, Listener(listener))

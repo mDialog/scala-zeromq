@@ -34,7 +34,8 @@ private[zeromq] class SocketManager(
   private val socketCount = new AtomicInteger()
   private val sockets = collection.mutable.Map.empty[ActorRef, Socket]
 
-  private val pollTimeoutSetting = config.getMilliseconds("zeromq.poll-timeout")
+  private val pollTimeoutSetting = config.getDuration("zeromq.poll-timeout",
+    java.util.concurrent.TimeUnit.MILLISECONDS)
 
   private val pollTimeoutUnit =
     if (ZMQ.getMajorVersion >= 3)
