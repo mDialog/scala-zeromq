@@ -4,16 +4,18 @@ organization := "com.mdialog"
 
 version := "1.0.0"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.11.0"
+
+crossScalaVersions := Seq("2.10.4", "2.11.0")
 
 parallelExecution := false
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-language:postfixOps")
 
 libraryDependencies ++= Seq(
-  "com.typesafe.akka" %% "akka-actor" % "2.3.0",
-  "org.scalatest" %% "scalatest" % "2.1.0" % "test",
-  "com.typesafe.akka" %% "akka-testkit" % "2.3.0" % "test"
+  "com.typesafe.akka" %% "akka-actor" % "2.3.2",
+  "org.scalatest" %% "scalatest" % "2.1.3" % "test",
+  "com.typesafe.akka" %% "akka-testkit" % "2.3.2" % "test"
 )
 
 resolvers ++= Seq(
