@@ -119,11 +119,9 @@ private[zeromq] class SocketManager(
   }
 
   private def newSocket(socketType: SocketType, options: Seq[SocketParam]): Try[Socket] = {
-
     var socket: Socket = null
 
     try {
-
       socket = Socket(zmqContext, poller, socketType)
       // Perform intialization in order: socket options, connection options,
       // then pubsub options.
@@ -153,7 +151,7 @@ private[zeromq] class SocketManager(
       Success(socket)
     } catch {
       case e: ZMQException ⇒
-        socket.close
+        Option(socket).map(_.close)
         Failure(e)
     }
   }
