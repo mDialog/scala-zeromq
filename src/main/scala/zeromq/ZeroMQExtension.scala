@@ -16,6 +16,9 @@ object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProv
 class ZeroMQExtension(val system: ActorSystem) extends Extension {
 
   private val zmqContext = ZMQ.context(1)
+
+  zmqContext.setMaxSockets(system.settings.config.getInt("zeromq.maximum-sockets"))
+
   system.registerOnTermination {
     zmqContext.term
   }
