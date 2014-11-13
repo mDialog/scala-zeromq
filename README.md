@@ -96,8 +96,8 @@ expect the socket to receive messages.
 
     val zmq = ZeroMQExtension(system)
 
-    val pushSocket = zmq.newSocket(SocketType.Push, Bind("tcp://localhost:5560"))
-    val pullSocket = zmq.newSocket(SocketType.Pull, Connect("tcp://localhost:5560"), Listener(anActorRef))
+    val pushSocket = zmq.newSocket(SocketType.Push, Bind("tcp://127.0.0.1:5560"))
+    val pullSocket = zmq.newSocket(SocketType.Pull, Connect("tcp://127.0.0.1:5560"), Listener(anActorRef))
 
 Each socket is a child of the actor responsible for creating it.
 
