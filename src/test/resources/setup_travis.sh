@@ -11,13 +11,9 @@ cd ../
 
 # Install JZMQ
 git clone https://github.com/zeromq/jzmq.git
-cd jzmq
+cd jzmq/jzmq-jni
 ./autogen.sh
 ./configure
 make
 sudo make install
 cd ../
-
-# Add jar file
-mkdir lib
-cp /usr/local/share/java/zmq.jar lib/

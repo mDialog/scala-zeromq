@@ -21,8 +21,7 @@ class ZeroMQExtensionSpec extends TestKit(ActorSystem("ZeroMQExtensionSpec")) wi
 
   describe("ZeroMQExtension") {
     it("should support pub-sub connections") {
-      val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
-
+      val endpoint = TestUtils.getEndpoint
       val subscriberProbe = TestProbe()
       val publisher = zmq.newSocket(SocketType.Pub, Bind(endpoint))
       val subscriber = zmq.newSocket(SocketType.Sub, Listener(subscriberProbe.ref), Connect(endpoint), SubscribeAll)
@@ -55,7 +54,7 @@ class ZeroMQExtensionSpec extends TestKit(ActorSystem("ZeroMQExtensionSpec")) wi
     }
 
     it("should support req-rep connections") {
-      val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
+      val endpoint = TestUtils.getEndpoint
 
       val requesterProbe = TestProbe()
       val replierProbe = TestProbe()
@@ -79,7 +78,7 @@ class ZeroMQExtensionSpec extends TestKit(ActorSystem("ZeroMQExtensionSpec")) wi
     }
 
     it("should support push-pull connections") {
-      val endpoint = "tcp://127.0.0.1:%s" format { val s = new java.net.ServerSocket(0); try s.getLocalPort finally s.close() }
+      val endpoint = TestUtils.getEndpoint
 
       val pullerProbe = TestProbe()
       val pusher = zmq.newSocket(SocketType.Push, Bind(endpoint))
