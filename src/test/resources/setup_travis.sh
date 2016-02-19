@@ -4,7 +4,7 @@
 wget http://download.zeromq.org/zeromq-4.1.4.tar.gz
 tar -xzf zeromq-4.1.4.tar.gz
 cd zeromq-4.1.4
-./configure
+./configure --without-libsodium
 make
 sudo make install
 cd ../
