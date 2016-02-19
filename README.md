@@ -14,10 +14,8 @@ immutable handle called a SocketRef. Under the hood, scala-zeromq uses
 [Akka](http://akka.io) to ensure all socket interactions are handled safely and
 efficiently.
 
-**Requires libzmq (v2.1.0 or greater) and either
-[JZMQ](https://github.com/zeromq/jzmq) or
-[zeromq-scala-binding](https://github.com/valotrading/zeromq-scala-binding)**,
-neither is included automatically.
+**Requires libzmq (v2.1.0 or greater) and [JZMQ](https://github.com/zeromq/jzmq)**,
+neither of which is included automatically. See [Dependencies](#Dependencies).
 
 ## Using
 
@@ -119,6 +117,29 @@ socket actor.
 Close the socket by sending a PoisonPill to the socket actor.
 
     pullSocket ! PoisonPill
+    
+### Using with Akka (Java)
+
+While not as pretty, scala-zeromq can be used by akka written in Java as well. It looks a bit like this:
+
+    ActorRef subscriber = zmq.newSocketJ(SocketType.Sub$.MODULE$, new Listener(theListener), new Connect(endpoint), package$.MODULE$.SubscribeAll());
+
+See JavaUsageSuite.java for a full example.
+
+## <a name="Dependencies"></a>Dependencies
+
+### JZMQ
+
+JZMQ is a required package that contains java bindings for the native zeromq binaries. To include in your project you should do one of
+
+* [Build and install from source](https://github.com/zeromq/jzmq#building-and-installing-jzmq) (most customizable and current).
+* Include a [package dependency on JZMQ](http://search.maven.org/#artifactdetails|org.zeromq|jzmq|3.1.0|jar) from maven central (easiest).
+
+The package dependency is not included automatically so that you can build your own if you wish.
+
+### libzmq
+
+libzmq is the native zeromq library which is required. It must be built and installed for your particular platform. Instructions can be [found here](http://zeromq.org/intro:get-the-software).
 
 ## Documentation
 
@@ -134,6 +155,6 @@ Fork the project, add tests if possible and send a pull request.
 
 ## Contributors
 
-Chris Dinn, Sebastian Hubbard
+Chris Dinn, Sebastian Hubbard, Jason Goodwin, Luke Palmer
 
-**©2013 mDialog Corp. All rights reserved.**
+**©2016 mDialog Corp. All rights reserved.**

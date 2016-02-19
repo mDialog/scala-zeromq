@@ -88,6 +88,7 @@ private[zeromq] abstract class Socket(val socket: ZMQ.Socket, val poller: ZMQ.Po
       case MulticastHops(value)        ⇒ socket.setMulticastHops(value)
       case SendBufferSize(value)       ⇒ socket.setSendBufferSize(value)
       case ReceiveBufferSize(value)    ⇒ socket.setReceiveBufferSize(value)
+      case Conflate(value)             ⇒ socket.setConflate(value)
     }
 
   def getSocketOption(query: SocketOptionQuery) =
@@ -109,6 +110,7 @@ private[zeromq] abstract class Socket(val socket: ZMQ.Socket, val poller: ZMQ.Po
       case SendBufferSize       ⇒ socket.getSendBufferSize
       case ReceiveBufferSize    ⇒ socket.getReceiveBufferSize
       case FileDescriptor       ⇒ socket.getFD
+      case Conflate             ⇒ socket.getConflate
     }
 
   def close {
