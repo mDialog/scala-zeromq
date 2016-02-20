@@ -142,6 +142,6 @@ Fork the project, add tests if possible and send a pull request.
 
 ## Contributors
 
-Chris Dinn, Sebastian Hubbard
+Chris Dinn, Sebastian Hubbard, Luke Palmer
 
 **©2013 mDialog Corp. All rights reserved.**
