@@ -38,7 +38,6 @@ public class JavaUsageSuite {
     public void JavaAPI() {
         new JavaTestKit(system) {{
             String endpoint = "tcp:/" + SocketUtil.temporaryServerAddress(SocketUtil.temporaryServerAddress$default$1(),SocketUtil.temporaryServerAddress$default$2());
-            System.out.println("endpoint is " + endpoint);
             ActorRef publisher = zmq.newSocket(SocketType.Pub$.MODULE$, asScalaBuffer(Arrays.asList(new Bind(endpoint))), null);
             ActorRef subscriber = zmq.newSocket(SocketType.Sub$.MODULE$, asScalaBuffer(Arrays.asList(new Listener(getRef()), new Connect(endpoint), package$.MODULE$.SubscribeAll())), null);
 
