@@ -19,14 +19,41 @@ libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-testkit" % "2.3.2" % "test"
 )
 
-resolvers ++= Seq(
- //   "Sonatype (releases)" at "https://oss.sonatype.org/content/repositories/releases/",
-    "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
+//publish with: activator '+ publish-signed'
+publishMavenStyle := true
+
+publishTo := {
+  val nexus = "https://oss.sonatype.org/"
+  if (isSnapshot.value)
+    Some("snapshots" at nexus + "content/repositories/snapshots")
+  else
+    Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+}
+
+publishArtifact in Test := false
+
+pomIncludeRepository := { _ => false }
+
+pomExtra := (
+  <url>http://www.github.com/mdialog/scala-zeromq</url>
+  <licenses>
+    <license>
+      <name>Apache2</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.html</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
+  <scm>
+    <url>git@github.com:mdialog/scala-zeromq</url>
+    <connection>scm:git:git@github.com:jasongoodwin/better-java-monads.git</connection>
+  </scm>
+  <developers>
+    <developer>
+      <id>mdialog</id>
+      <name>mDialog</name>
+      <url>http://www.github.com/mdialog</url>
+    </developer>
+  </developers>
 )
 
-publishTo <<= version { (v: String) =>
-  if (v.trim.endsWith("-SNAPSHOT"))
-    Some(Resolver.file("Snapshots", file("../mdialog.github.com/snapshots/")))
-  else
-    Some(Resolver.file("Releases", file("../mdialog.github.com/releases/")))
-}
+credentials += Credentials(Path.userHome / ".nexuscredentials")
