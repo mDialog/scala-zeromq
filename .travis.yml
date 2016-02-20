@@ -9,8 +9,8 @@
    - openjdk8
  before_script:
    - sh src/test/resources/setup_travis.sh
- before_install:
-   - sudo hostname "$(hostname | cut -c1-63)" # workaround travis/openjdk bug https://github.com/travis-ci/travis-ci/issues/5227
-   - sed -e "s/^\\(127\\.0\\.0\\.1.*\\)/\\1 $(hostname | cut -c1-63)/" /etc/hosts | sudo tee /etc/hosts
  env:
    - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+ addons:
+   # necessary to avoid openjdk buffer overflows
+   hostname: localhost
