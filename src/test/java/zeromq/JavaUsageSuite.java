@@ -3,6 +3,7 @@ package zeromq;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.testkit.JavaTestKit;
+import akka.testkit.SocketUtil;
 import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -36,7 +37,7 @@ public class JavaUsageSuite {
     @Test
     public void JavaAPI() {
         new JavaTestKit(system) {{
-            String endpoint = TestUtils.getEndpoint();
+            String endpoint = "tcp:/" + SocketUtil.temporaryServerAddress(SocketUtil.temporaryServerAddress$default$1(),SocketUtil.temporaryServerAddress$default$2());
             ActorRef publisher = zmq.newSocket(SocketType.Pub$.MODULE$, asScalaBuffer(Arrays.asList(new Bind(endpoint))), null);
             ActorRef subscriber = zmq.newSocket(SocketType.Sub$.MODULE$, asScalaBuffer(Arrays.asList(new Listener(getRef()), new Connect(endpoint), package$.MODULE$.SubscribeAll())), null);
 

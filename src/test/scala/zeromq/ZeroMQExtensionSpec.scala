@@ -1,7 +1,7 @@
 package zeromq
 
 import akka.actor.{Actor, ActorRef, ActorSystem, Cancellable}
-import akka.testkit.{TestKit, TestProbe}
+import akka.testkit.{SocketUtil, TestKit, TestProbe}
 import akka.util.{ByteString, Timeout}
 import org.scalatest.{FunSpecLike, MustMatchers}
 
@@ -19,7 +19,7 @@ class ZeroMQExtensionSpec extends TestKit(ActorSystem("ZeroMQExtensionSpec")) wi
 
   describe("ZeroMQExtension") {
     it("should support pub-sub connections") {
-      val endpoint = TestUtils.getEndpoint
+      val endpoint = "tcp:/" + SocketUtil.temporaryServerAddress()
       val subscriberProbe = TestProbe()
       val publisher = zmq.newSocket(SocketType.Pub, Bind(endpoint))
       val subscriber = zmq.newSocket(SocketType.Sub, Listener(subscriberProbe.ref), Connect(endpoint), SubscribeAll)
@@ -53,7 +53,7 @@ class ZeroMQExtensionSpec extends TestKit(ActorSystem("ZeroMQExtensionSpec")) wi
     }
 
     it("should support req-rep connections") {
-      val endpoint = TestUtils.getEndpoint
+      val endpoint = "tcp:/" + SocketUtil.temporaryServerAddress()
 
       val requesterProbe = TestProbe()
       val replierProbe = TestProbe()
@@ -77,7 +77,7 @@ class ZeroMQExtensionSpec extends TestKit(ActorSystem("ZeroMQExtensionSpec")) wi
     }
 
     it("should support push-pull connections") {
-      val endpoint = TestUtils.getEndpoint
+      val endpoint = "tcp:/" + SocketUtil.temporaryServerAddress()
 
       val pullerProbe = TestProbe()
       val pusher = zmq.newSocket(SocketType.Push, Bind(endpoint))
