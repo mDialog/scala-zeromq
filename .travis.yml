@@ -1,5 +1,6 @@
  language: scala
  dist: trusty
+ sudo: required
  scala:
    - "2.11.7"
  jdk:
@@ -12,5 +13,4 @@
  env:
    - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
  addons:
-   # necessary to avoid openjdk buffer overflows
    hostname: localhost
