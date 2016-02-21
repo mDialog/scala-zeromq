@@ -8,8 +8,10 @@ import akka.util.ByteString;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import scala.concurrent.duration.FiniteDuration;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -37,12 +39,12 @@ public class JavaUsageSuite {
     @Test
     public void JavaAPI() {
         new JavaTestKit(system) {{
-            String endpoint = "tcp:/" + SocketUtil.temporaryServerAddress(SocketUtil.temporaryServerAddress$default$1(),SocketUtil.temporaryServerAddress$default$2());
+            String endpoint = "tcp:/" + SocketUtil.temporaryServerAddress(SocketUtil.temporaryServerAddress$default$1(), SocketUtil.temporaryServerAddress$default$2());
             ActorRef publisher = zmq.newSocket(SocketType.Pub$.MODULE$, asScalaBuffer(Arrays.asList(new Bind(endpoint))), null);
             ActorRef subscriber = zmq.newSocket(SocketType.Sub$.MODULE$, asScalaBuffer(Arrays.asList(new Listener(getRef()), new Connect(endpoint), package$.MODULE$.SubscribeAll())), null);
 
             publisher.tell(new Message(asScalaBuffer(Arrays.asList(ByteString.fromString("hello world")))), ActorRef.noSender());
-            assertThat(expectMsgClass(Message.class).apply(0).utf8String(), equalTo("hello world"));
+            assertThat(expectMsgClass(FiniteDuration.apply(10, TimeUnit.SECONDS), Message.class).apply(0).utf8String(), equalTo("hello world"));
 
             system.stop(subscriber);
             system.stop(publisher);
