@@ -15,4 +15,5 @@
  env:
    - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
  addons:
-   hostname: localhost
+   #workaround for openjdk buffer overflow
+   hostname: dummy
