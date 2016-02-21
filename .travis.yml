@@ -5,15 +5,11 @@
    - "2.11.7"
  jdk:
    - oraclejdk7
-   - openjdk7
    - oraclejdk8
-   - openjdk8
+   - openjdk8 # no openjdk7 until travis-ci/travis-ci#5669 is fixed
  before_script:
    - sh src/test/resources/setup_travis.sh
  before_install:
    - cat /etc/hosts
  env:
    - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
- addons:
-   #workaround for openjdk buffer overflow
-   hostname: dummy
