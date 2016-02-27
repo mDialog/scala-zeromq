@@ -1,12 +1,14 @@
 package zeromq
 
+import java.util.concurrent.TimeUnit
+
 import akka.actor._
 import akka.pattern.ask
 import akka.util.Timeout
-import java.util.concurrent.TimeUnit
-import scala.concurrent.duration.Duration
-import scala.concurrent.Await
 import org.zeromq.ZMQ
+
+import scala.annotation.varargs
+import scala.concurrent.Await
 
 object ZeroMQExtension extends ExtensionId[ZeroMQExtension] with ExtensionIdProvider {
   def lookup() = ZeroMQExtension
@@ -20,7 +22,7 @@ class ZeroMQExtension(val system: ActorSystem) extends Extension {
   zmqContext.setMaxSockets(system.settings.config.getInt("zeromq.maximum-sockets"))
 
   system.registerOnTermination {
-    zmqContext.term
+    zmqContext.term()
   }
 
   private implicit val newSocketTimeout = Timeout(system.settings.config.
@@ -40,6 +42,13 @@ class ZeroMQExtension(val system: ActorSystem) extends Extension {
   private val pollIndex: Int = poller.register(interruptSub, ZMQ.Poller.POLLIN)
   private val pollInterrupter = system.actorOf(PollInterrupter(interruptPub).withDispatcher("zeromq.poll-interrupter-dispatcher"), "zeromq-poll-interrupter")
   private val socketManager = system.actorOf(SocketManager(zmqContext, poller, interruptSub, pollIndex, pollInterrupter).withDispatcher("zeromq.socket-manager-dispatcher"), "zeromq-socket-manager")
+
+  /**
+    * Java-compatible version of newSocket
+    * Varargs only works if the varargs parameter is the last argument, which it's not if there's an implicit following it.
+    */
+  @varargs
+  def newSocketJ(socketType: SocketType, socketParams: Param*) : ActorRef = newSocket(socketType,socketParams: _*)
 
   def newSocket(socketType: SocketType, socketParams: Param*)(implicit context: ActorContext = null): ActorRef = {
     val newSocketFuture = socketManager ? NewSocket(socketType, socketParams, context)

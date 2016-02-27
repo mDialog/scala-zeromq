@@ -1,12 +1,18 @@
  language: scala
+ dist: trusty
+ sudo: true
  scala:
-   - "2.10.4"
-   - "2.11.0"
+   - "2.11.7"
  jdk:
    - oraclejdk7
-   - openjdk7
-   - openjdk6
+   - oraclejdk8
+   - openjdk8
  before_script:
    - sh src/test/resources/setup_travis.sh
+ before_install:
+   - cat /etc/hosts
  env:
    - LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/lib
+ addons:
+   #workaround for openjdk buffer overflow
+   hostname: dummy

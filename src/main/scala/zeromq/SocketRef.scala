@@ -1,11 +1,13 @@
 package zeromq
 
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-import akka.actor.{ Actor, ActorRef, Props, Status, PoisonPill }
+import java.util.concurrent.{TimeUnit, TimeoutException}
+
+import akka.actor.{Actor, ActorRef, PoisonPill, Props, Status}
 import akka.pattern.ask
-import akka.util.{ ByteString, Timeout }
-import java.util.concurrent.TimeoutException
+import akka.util.{ByteString, Timeout}
+
+import scala.concurrent.duration._
+import scala.concurrent.{Await, Future}
 
 private case object FetchMessage
 private case class AwaitMessage(timeout: FiniteDuration)
@@ -53,10 +55,8 @@ private class SocketListener extends Actor {
 }
 
 case class SocketRef(socketType: SocketType)(implicit extension: ZeroMQExtension) {
-  import Status._
 
-  private implicit val timeout = Timeout(1000,
-    java.util.concurrent.TimeUnit.MILLISECONDS)
+  private implicit val timeout = Timeout(extension.system.settings.config.getDuration("zeromq.socket-ref-timeout", TimeUnit.MILLISECONDS), TimeUnit.MILLISECONDS)
 
   private val listener = extension.system.actorOf(Props[SocketListener])
   private val socket = extension.newSocket(socketType, Listener(listener))
