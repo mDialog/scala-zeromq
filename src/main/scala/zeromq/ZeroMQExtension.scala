@@ -43,7 +43,14 @@ class ZeroMQExtension(val system: ActorSystem) extends Extension {
   private val pollInterrupter = system.actorOf(PollInterrupter(interruptPub).withDispatcher("zeromq.poll-interrupter-dispatcher"), "zeromq-poll-interrupter")
   private val socketManager = system.actorOf(SocketManager(zmqContext, poller, interruptSub, pollIndex, pollInterrupter).withDispatcher("zeromq.socket-manager-dispatcher"), "zeromq-socket-manager")
 
-  @varargs def newSocket(socketType: SocketType, socketParams: Param*)(implicit context: ActorContext = null): ActorRef = {
+  /**
+    * Java-compatible version of newSocket
+    * Varargs only works if the varargs parameter is the last argument, which it's not if there's an implicit following it.
+    */
+  @varargs
+  def newSocketJ(socketType: SocketType, socketParams: Param*) : ActorRef = newSocket(socketType,socketParams: _*)
+
+  def newSocket(socketType: SocketType, socketParams: Param*)(implicit context: ActorContext = null): ActorRef = {
     val newSocketFuture = socketManager ? NewSocket(socketType, socketParams, context)
 
     pollInterrupter ! Interrupt

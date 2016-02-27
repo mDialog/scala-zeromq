@@ -40,10 +40,10 @@ public class JavaUsageSuite {
     public void JavaAPI() {
         new JavaTestKit(system) {{
             String endpoint = "tcp:/" + SocketUtil.temporaryServerAddress(SocketUtil.temporaryServerAddress$default$1(), SocketUtil.temporaryServerAddress$default$2());
-            ActorRef publisher = zmq.newSocket(SocketType.Pub$.MODULE$, asScalaBuffer(Arrays.asList(new Bind(endpoint))), null);
-            ActorRef subscriber = zmq.newSocket(SocketType.Sub$.MODULE$, asScalaBuffer(Arrays.asList(new Listener(getRef()), new Connect(endpoint), package$.MODULE$.SubscribeAll())), null);
+            ActorRef publisher = zmq.newSocketJ(SocketType.Pub$.MODULE$, new Bind(endpoint));
+            ActorRef subscriber = zmq.newSocketJ(SocketType.Sub$.MODULE$, new Listener(getRef()), new Connect(endpoint), package$.MODULE$.SubscribeAll());
 
-            publisher.tell(new Message(asScalaBuffer(Arrays.asList(ByteString.fromString("hello world")))), ActorRef.noSender());
+            publisher.tell(Message$.MODULE$.apply(ByteString.fromString("hello world")), ActorRef.noSender());
             assertThat(expectMsgClass(FiniteDuration.apply(10, TimeUnit.SECONDS), Message.class).apply(0).utf8String(), equalTo("hello world"));
 
             system.stop(subscriber);

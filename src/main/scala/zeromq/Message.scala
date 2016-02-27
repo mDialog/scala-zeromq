@@ -6,7 +6,6 @@ import scala.annotation.varargs
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.{IndexedSeqLike, mutable}
 
-@varargs
 class Message(parts: ByteString*) extends IndexedSeq[ByteString] with IndexedSeqLike[ByteString, Message] {
   private val underlying = parts.toIndexedSeq
 
@@ -19,6 +18,7 @@ class Message(parts: ByteString*) extends IndexedSeq[ByteString] with IndexedSeq
 }
 
 object Message {
+  @varargs
   def apply(parts: ByteString*) = new Message(parts: _*)
 
   def unapplySeq(message: Message) = IndexedSeq.unapplySeq(message)

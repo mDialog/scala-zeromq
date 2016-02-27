@@ -124,7 +124,7 @@ Close the socket by sending a PoisonPill to the socket actor.
 
 While not as pretty, scala-zeromq can be used by akka written in Java as well. It looks a bit like this:
 
-    ActorRef subscriber = zmq.newSocket(SocketType.Sub$.MODULE$, JavaConversions.asScalaBuffer(Arrays.asList(new Listener(theListener), new Connect(endpoint), package$.MODULE$.SubscribeAll())), null);
+    ActorRef subscriber = zmq.newSocketJ(SocketType.Sub$.MODULE$, new Listener(theListener), new Connect(endpoint), package$.MODULE$.SubscribeAll());
 
 See JavaUsageSuite.java for a full example.
 

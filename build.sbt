@@ -11,14 +11,6 @@ parallelExecution := false
 
 scalacOptions ++= Seq("-unchecked", "-deprecation", "-language:postfixOps")
 
-// @varargs behavior changed between JDK7/8, so only run java tests on JDK8 or above
-unmanagedSourceDirectories in Test := {
-  if (sys.props("java.specification.version") < "1.8")
-    (scalaSource in Test).value :: Nil
-  else
-    (unmanagedSourceDirectories in Test).value
-}
-
 libraryDependencies ++= Seq(
   "com.typesafe.akka" %% "akka-actor" % "2.3.14",
   "org.scalatest" %% "scalatest" % "2.2.6" % "test",
