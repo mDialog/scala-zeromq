@@ -99,3 +99,6 @@ case class ReceiveBufferSize(value: Long) extends SocketOption
 object ReceiveBufferSize extends SocketOptionQuery
 
 object FileDescriptor extends SocketOptionQuery
+
+case class Conflate(value: Boolean) extends SocketOption
+object Conflate extends SocketOptionQuery

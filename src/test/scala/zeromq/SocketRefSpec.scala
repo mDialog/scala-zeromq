@@ -1,11 +1,13 @@
 package zeromq
 
-import org.scalatest.FunSpec
-import org.zeromq.ZMQException
-import akka.util.ByteString
-import scala.concurrent.{ Await, Future, ExecutionContext }
-import scala.concurrent.duration._
 import java.util.concurrent.TimeoutException
+
+import akka.util.ByteString
+import org.scalatest.FunSpec
+import org.zeromq.{ZMQ, ZMQException}
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 class SocketRefSpec extends FunSpec {
 
@@ -157,7 +159,11 @@ class SocketRefSpec extends FunSpec {
       push.setSocketOption(Rate(100))
 
       assert(push.getSocketOption(Rate) === 100)
+
+      push.setSocketOption(Conflate(true))
+      assert(push.getSocketOption(Conflate) === {
+        if (ZMQ.getMajorVersion >= 4) true else false
+      })
     }
   }
-
 }

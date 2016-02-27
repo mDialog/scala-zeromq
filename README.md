@@ -119,6 +119,14 @@ socket actor.
 Close the socket by sending a PoisonPill to the socket actor.
 
     pullSocket ! PoisonPill
+    
+### Using with Akka (Java)
+
+While not as pretty, scala-zeromq can be used by akka written in Java as well. It looks a bit like this:
+
+    ActorRef subscriber = zmq.newSocketJ(SocketType.Sub$.MODULE$, new Listener(theListener), new Connect(endpoint), package$.MODULE$.SubscribeAll());
+
+See JavaUsageSuite.java for a full example.
 
 ## Documentation
 
@@ -134,6 +142,6 @@ Fork the project, add tests if possible and send a pull request.
 
 ## Contributors
 
-Chris Dinn, Sebastian Hubbard
+Chris Dinn, Sebastian Hubbard, Luke Palmer
 
 **©2013 mDialog Corp. All rights reserved.**
