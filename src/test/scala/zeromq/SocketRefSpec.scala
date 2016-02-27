@@ -161,8 +161,9 @@ class SocketRefSpec extends FunSpec {
       assert(push.getSocketOption(Rate) === 100)
 
       push.setSocketOption(Conflate(true))
-      if (ZMQ.getMajorVersion >= 4)
-        assert(push.getSocketOption(Conflate) === true)
+      assert(push.getSocketOption(Conflate) === {
+        if (ZMQ.getMajorVersion >= 4) true else false
+      })
     }
   }
 }
