@@ -5,7 +5,9 @@ organization := "com.mdialog"
 
 version := "1.2.0"
 
-scalaVersion := "2.11.7"
+scalaVersion := "2.12.1"
+
+crossScalaVersions := Seq("2.11.8", "2.12.1")
 
 parallelExecution := false
 
